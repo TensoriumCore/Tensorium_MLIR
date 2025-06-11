@@ -1,74 +1,29 @@
-cmake_minimum_required(VERSION 3.20.0)
-project(Demo)
+cmake_minimum_required(VERSION 3.20)
+project(RelativityMLIR LANGUAGES C CXX)
 
-
-set(CMAKE_CXX_STANDARD 17)
+# Passe tout le projet et ses subdirs en C++17
+set(CMAKE_CXX_STANDARD     17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS    OFF)   # pas d’extensions GNU
+# Configuration LLVM/MLIR
+set(LLVM_DIR "/opt/local/libexec/llvm-20/lib/cmake/llvm")
+set(MLIR_DIR "/opt/local/libexec/llvm-20/lib/cmake/mlir")
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  find_package(MLIR REQUIRED CONFIG)
+find_package(MLIR REQUIRED CONFIG)
+include(${MLIR_CMAKE_DIR}/AddMLIR.cmake)
 
-  message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
-  message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-  set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
-  set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
-  set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
-
-  list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
-  list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-
-  include(TableGen)
-  include(AddLLVM)
-  include(AddMLIR)
-  include(HandleLLVMOptions)
-else()
-  # Build via external projects mechanism
-  set(MLIR_MAIN_SRC_DIR ${LLVM_MAIN_SRC_DIR}/../mlir)
-  set(MLIR_INCLUDE_DIR ${MLIR_MAIN_SRC_DIR}/include)
-  set(MLIR_GENERATED_INCLUDE_DIR ${LLVM_BINARY_DIR}/tools/mlir/include)
-  set(MLIR_INCLUDE_DIRS "${MLIR_INCLUDE_DIR};${MLIR_GENERATED_INCLUDE_DIR}")
-endif()
-
-
-include_directories(
-    ${CMAKE_BINARY_DIR}
+list(APPEND CMAKE_MODULE_PATH
+  "${MLIR_CMAKE_DIR}"
+  "${LLVM_CMAKE_DIR}"
 )
 
-include_directories(${LLVM_INCLUDE_DIRS})
-include_directories(${MLIR_INCLUDE_DIRS})
-link_directories(${LLVM_BUILD_LIBRARY_DIR})
-add_definitions(${LLVM_DEFINITIONS})
+# Répertoires d'inclusion
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_BINARY_DIR}/generated/include
+  ${MLIR_INCLUDE_DIRS}
+)
 
-get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-get_property(extension_libs GLOBAL PROPERTY MLIR_EXTENSION_LIBS)
-
-# add_compile_options(-fsanitize=address)
-# add_link_options(-fsanitize=address)
-
-# add_compile_options(-fsanitize=undefined)
-# add_link_options(-fsanitize=undefined)
-
-set(LLVM_TARGET_DEFINITIONS dialect.td)
-mlir_tablegen(Dialect.h.inc -gen-dialect-decls -dialect=mydialect)
-mlir_tablegen(Dialect.cpp.inc -gen-dialect-defs -dialect=mydialect)
-mlir_tablegen(Ops.h.inc -gen-op-decls)
-mlir_tablegen(Ops.cpp.inc -gen-op-defs)
-mlir_tablegen(Passes.h.inc -gen-pass-decls)
-
-
-add_public_tablegen_target(MLIRMyDialectIncGen)
-
-
-# Add executable and link it with the parser library
-add_llvm_executable(app main.cc  DEPENDS MLIRMyDialectIncGen)
-target_link_libraries(app 
-
-PRIVATE
-        ${dialect_libs}
-        MLIRAnalysis
-        MLIRIR
-        MLIRParser
-        MLIRSupport
-		bsd
-    )
+# Sous-projets
+add_subdirectory(lib)
+add_subdirectory(tools)
