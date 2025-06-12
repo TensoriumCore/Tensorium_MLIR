@@ -18,7 +18,6 @@ add_mlir_dialect(RelativityDialect relativity)
 add_mlir_dialect_library(MLIRRelativity
   RelativityDialect.cpp
   DEPENDS
-    MLIRRelativityDialectIncGen
     MLIRRelativityOpsIncGen
   LINK_LIBS PUBLIC
     MLIRIR

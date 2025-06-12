@@ -1,5 +1,11 @@
-#include "mlir/IR/DialectImplementation.h"   // Must come before the .cpp.inc
+// lib/RelativityDialect.cpp
+#include "Relativity/Dialect.h"
 
-#include "Relativity/Dialect.h"               // Dialect declaration
-#include "mlir/Support/ToolUtilities.h"
-
+namespace mlir::relativity {
+void RelativityDialect::initialize() {
+  addOperations<
+    #define GET_OP_LIST
+    #include "Relativity/RelativityOps.h.inc"
+  >();
+}
+} // namespace mlir::relativity namespace mlir::relativity
