@@ -4,4 +4,5 @@
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 
+#include "Relativity/RelativityDialect.h.inc"
 #endif
