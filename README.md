@@ -33,11 +33,11 @@ cd ~/src
 export PREFIX=/opt/local/libexec/llvm-20     # install location
 mkdir llvm-build-rtti && cd llvm-build-rtti
 
-cmake -G Ninja ../llvm-project/llvm \
+cmake -G Ninja ../llvm \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DLLVM_ENABLE_PROJECTS="mlir;clang;lld" \
   -DLLVM_TARGETS_TO_BUILD="X86" \
-  -DLLVM_ENABLE_RTTI=ON \                # <-- crucial for MLIR dialects
+  -DLLVM_ENABLE_RTTI=ON \  
   -DMLIR_ENABLE_BINDINGS_PYTHON=OFF \
   -DCMAKE_BUILD_TYPE=Release
 
