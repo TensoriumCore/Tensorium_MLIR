@@ -1,9 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/ltouzali/Desktop/Tensorium_MLIR/build/cmake_install.cmake",
-		"/home/ltouzali/Desktop/Tensorium_MLIR/build/lib/cmake_install.cmake",
-		"/home/ltouzali/Desktop/Tensorium_MLIR/build/tools/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

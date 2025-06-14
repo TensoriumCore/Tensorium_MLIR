@@ -52,7 +52,7 @@ pkgs.mkShell {
       echo "[+] Installing pip-only packages..."
       pip install --upgrade pip
       pip install nanobind
-      pip install antlr4-python3-runtime==4.11.*
+	  pip install --force-reinstall --ignore-installed antlr4-python3-runtime==4.11.1
     else
       source .venv/bin/activate
     fi
