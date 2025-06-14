@@ -1,23 +1,22 @@
 # Tensorium_MLIR
 
-**An MLIR dialect for symbolic tensor computation and numerical relativity.**  
-This project aims to explore MLIR-based compiler infrastructure for symbolic tensor expressions, with a focus on general relativity and scientific computing.
+**A symbolic-to-MLIR codegen tool for numerical relativity.**
+This project parses LaTeX expressions of spacetime metrics and automatically generates C++ or MLIR code for initial data in numerical relativity.
 
+## The Latex Parser is in [Tensorium_Tex/](Tensorium_Tex/), you just have to install nix and run nix-shell in the main directory
 
 ## Status
+This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
 
-This project is currently a **proof of concept**. The core idea is to parse symbolic expressions (e.g., from LaTeX or DSL) and convert them into a custom MLIR dialect, then lower to efficient LLVM IR for simulation.
-
----
 
 ## Goals
 
-- [x] Create a dedicated dialect for tensors and metrics
-- [x] Parse and represent symbolic expressions (e.g. Kerr, Schwarzschild metrics)
-- [ ] Support basic tensor operations (contract, transpose, derive)
-- [ ] Implement lowering passes to LLVM IR
-- [ ] Explore code generation strategies for scientific backends (CPU/GPU)
-- [ ] Provide a frontend abstraction for scientists (symbolic to MLIR/LLVM)
+- [x] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
+- [x] Extract and simplify symbolic tensors using SymPy
+- [x] Generate metric functions in standard MLIR or C++
+- [ ] Support symbolic derivation of Christoffel, Ricci, and Riemann tensors
+- [ ] Provide clean initial data for BSSN-based codes
+- [ ] Integrate with Tensorium for runtime execution and benchmarking
 
 ### Build & install LLVM 20 + MLIR (with RTTI)
 
