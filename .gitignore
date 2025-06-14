@@ -13,7 +13,6 @@ compile_commands.json
 *.a
 # python
 .venv/
-build/
 # macOS
 *.DS_Store
 
