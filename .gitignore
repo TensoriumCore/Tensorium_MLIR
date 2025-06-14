@@ -6,7 +6,6 @@ __pycache__/
 
 # CMake / ninja / cmake-build
 pybuild/
-build/
 compile_commands.json
 *.o
 *.so
