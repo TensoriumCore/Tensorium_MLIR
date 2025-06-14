@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/home/ltouzali/Desktop/Tensorium_MLIR/build",
+  "command": "/nix/store/mpm3i0sbqc9svfch6a17179fs64dz2kv-gcc-wrapper-13.3.0/bin/g++ -I/home/ltouzali/Desktop/Tensorium_MLIR/include -I/home/ltouzali/Desktop/Tensorium_MLIR/build/generated/include -I/home/ltouzali/llvm-install/include -g -std=c++17  -fno-exceptions -funwind-tables -o lib/CMakeFiles/obj.MLIRRelativity.dir/RelativityDialect.cpp.o -c /home/ltouzali/Desktop/Tensorium_MLIR/lib/RelativityDialect.cpp",
+  "file": "/home/ltouzali/Desktop/Tensorium_MLIR/lib/RelativityDialect.cpp",
+  "output": "lib/CMakeFiles/obj.MLIRRelativity.dir/RelativityDialect.cpp.o"
+},
+{
+  "directory": "/home/ltouzali/Desktop/Tensorium_MLIR/build",
+  "command": "/nix/store/mpm3i0sbqc9svfch6a17179fs64dz2kv-gcc-wrapper-13.3.0/bin/g++ -I/home/ltouzali/Desktop/Tensorium_MLIR/include -I/home/ltouzali/Desktop/Tensorium_MLIR/build/generated/include -I/home/ltouzali/llvm-install/include -g -std=c++17  -fno-exceptions -funwind-tables -o lib/CMakeFiles/obj.MLIRRelativity.dir/RelativityOps.cpp.o -c /home/ltouzali/Desktop/Tensorium_MLIR/lib/RelativityOps.cpp",
+  "file": "/home/ltouzali/Desktop/Tensorium_MLIR/lib/RelativityOps.cpp",
+  "output": "lib/CMakeFiles/obj.MLIRRelativity.dir/RelativityOps.cpp.o"
+},
+{
+  "directory": "/home/ltouzali/Desktop/Tensorium_MLIR/build",
+  "command": "/nix/store/mpm3i0sbqc9svfch6a17179fs64dz2kv-gcc-wrapper-13.3.0/bin/g++ -I/home/ltouzali/Desktop/Tensorium_MLIR/include -I/home/ltouzali/Desktop/Tensorium_MLIR/build/generated/include -I/home/ltouzali/llvm-install/include -g -std=c++17 -o tools/CMakeFiles/relativity-opt.dir/relativity-opt.cpp.o -c /home/ltouzali/Desktop/Tensorium_MLIR/tools/relativity-opt.cpp",
+  "file": "/home/ltouzali/Desktop/Tensorium_MLIR/tools/relativity-opt.cpp",
+  "output": "tools/CMakeFiles/relativity-opt.dir/relativity-opt.cpp.o"
+}
+]

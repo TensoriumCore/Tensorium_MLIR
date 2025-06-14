@@ -18,5 +18,6 @@ target_link_libraries(relativity-opt
   MLIRPass
   MLIRTransforms
   MLIRSupport
+  MLIRSideEffectInterfaces
 )
 

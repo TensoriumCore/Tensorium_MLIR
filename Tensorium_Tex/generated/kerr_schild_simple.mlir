@@ -1,0 +1,59 @@
+module {
+  func.func @kerr_schild_simple(%m: f64, %r: f64, %t: f64, %theta: f64, %phi: f64, %a: f64, %x: f64, %y: f64, %z: f64, %dx: f64, %dy: f64, %dz: f64, %dt: f64, %dr: f64, %dtheta: f64, %dphi: f64) -> f64 {
+    %x0 = arith.mulf %a, %a : f64
+    %x1 = arith.mulf %r, %r : f64
+    %x2 = arith.addf %x0, %x1 : f64
+    %x3 = arith.mulf %x2, %x2 : f64
+    %x4 = arith.mulf %r, %r : f64
+    %x5 = arith.mulf %x4, %r : f64
+    %x6 = arith.mulf %x5, %r : f64
+    %x7 = arith.mulf %z, %z : f64
+    %x8 = arith.mulf %x0, %x7 : f64
+    %x9 = arith.addf %x6, %x8 : f64
+    %c10 = arith.constant 1.0 : f64
+    %x11 = arith.divf %c10, %x3 : f64
+    %c12 = arith.constant 1.0 : f64
+    %x13 = arith.divf %c12, %x9 : f64
+    %x14 = arith.mulf %dx, %dx : f64
+    %x15 = arith.mulf %dy, %dy : f64
+    %x16 = arith.mulf %dz, %dz : f64
+    %c17 = arith.constant -1.0 : f64
+    %x18 = arith.mulf %dt, %dt : f64
+    %x19 = arith.mulf %c17, %x18 : f64
+    %x20 = arith.addf %x14, %x15 : f64
+    %x21 = arith.addf %x20, %x16 : f64
+    %x22 = arith.addf %x21, %x19 : f64
+    %x23 = arith.mulf %x3, %x9 : f64
+    %x24 = arith.mulf %x23, %x22 : f64
+    %c25 = arith.constant 2.0 : f64
+    %x26 = arith.mulf %a, %y : f64
+    %x27 = arith.mulf %r, %x : f64
+    %x28 = arith.addf %x26, %x27 : f64
+    %x29 = arith.mulf %dx, %x28 : f64
+    %c30 = arith.constant -1.0 : f64
+    %x31 = arith.mulf %a, %x : f64
+    %c32 = arith.constant -1.0 : f64
+    %x33 = arith.mulf %c32, %r : f64
+    %x34 = arith.mulf %x33, %y : f64
+    %x35 = arith.addf %x31, %x34 : f64
+    %x36 = arith.mulf %c30, %dy : f64
+    %x37 = arith.mulf %x36, %x35 : f64
+    %x38 = arith.addf %x29, %x37 : f64
+    %x39 = arith.mulf %r, %x38 : f64
+    %x40 = arith.mulf %dt, %r : f64
+    %x41 = arith.mulf %x40, %x2 : f64
+    %x42 = arith.mulf %dz, %x2 : f64
+    %x43 = arith.mulf %x42, %z : f64
+    %x44 = arith.addf %x39, %x41 : f64
+    %x45 = arith.addf %x44, %x43 : f64
+    %x46 = arith.mulf %x45, %x45 : f64
+    %x47 = arith.mulf %c25, %m : f64
+    %x48 = arith.mulf %x47, %r : f64
+    %x49 = arith.mulf %x48, %x46 : f64
+    %x50 = arith.addf %x24, %x49 : f64
+    %x51 = arith.mulf %x11, %x13 : f64
+    %x52 = arith.mulf %x51, %x50 : f64
+    %result = arith.addf %x52, %x52 : f64
+    return %result : f64
+  }
+}
