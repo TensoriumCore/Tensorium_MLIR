@@ -19,7 +19,6 @@ def export_code_to_file(code: str, name: str, backend: str):
     return filename
 
 
-# --- Setup ---
 backend = "mlir"
 m, r, t, theta, phi, a = symbols("m r t theta phi a")
 x, y, z = symbols("x y z")
@@ -38,13 +37,11 @@ metrics = {
     "kerr_schild_simple": r"-dt^2 + dx^2 + dy^2 + dz^2 + \frac{2m r^3}{r^4 + a^2 z^2} (dt + \frac{r x + a y}{r^2 + a^2} dx + \frac{r y - a x}{r^2 + a^2} dy + \frac{z}{r} dz)^2"
 }
 
-# --- Traitement des métriques ---
 for name, latex_expr in metrics.items():
     print(f"\n=== {name.upper()} ===")
     print(f"LaTeX: {latex_expr}")
 
     try:
-        # Expression scalaire simplifiée
         expr = parse_latex(latex_expr)
         expr = expr.subs({
             Function("a")(t): constants['a'],
@@ -55,7 +52,6 @@ for name, latex_expr in metrics.items():
 
         repl, reduced = run_cse(expr)
 
-        # === Génération du code MLIR scalaire ===
         code = generate_metric_code(name, latex_expr, args_common, backend=backend)
         if code:
             print("\n--- Code ---\n")
@@ -65,7 +61,6 @@ for name, latex_expr in metrics.items():
         if filepath:
             print(f"  → MLIR scalar code generated: {filepath}")
 
-        # === Génération du code tensoriel MLIR ===
         from metric_codegen.backends.mlir import generate_full_metric_mlir
         tensor_code = generate_full_metric_mlir(
             name=f"{name}_tensor",
