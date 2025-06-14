@@ -5,6 +5,11 @@ This project parses LaTeX expressions of spacetime metrics and automatically gen
 
 ## The Latex Parser is in [Tensorium_Tex/](Tensorium_Tex/), you just have to install nix and run nix-shell in the main directory
 
+```bash
+python3 Codegen.py --backend mlir/cpp && make 
+```
+(Type make only if you want all the ```.o``` for tests in a C++ main)
+
 ## Status
 This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
 
