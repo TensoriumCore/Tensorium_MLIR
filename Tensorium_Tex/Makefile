@@ -1,44 +1,33 @@
-MLIR_OPT     ?= mlir-opt
-MLIR_TRANS   ?= mlir-translate
-SRC_DIR      := generated
-OUT_DIR      := build
-GPU_TARGET   ?= none  # Options: none, nvvm, rocdl, spirv
+MLIR_OPT=mlir-opt
+MLIR_TRANSLATE=mlir-translate
+LLC=llc
+CLANG=clang++
 
-SRC_FILES    := $(wildcard $(SRC_DIR)/*.mlir)
-LLVM_FILES   := $(patsubst $(SRC_DIR)/%.mlir, $(OUT_DIR)/%.ll, $(SRC_FILES))
+MLIR_SRC=$(wildcard generated/*.mlir)
+LLVMDIR=build
 
-# Default target
-all: $(LLVM_FILES)
+MLIR_LOWERED=$(MLIR_SRC:generated/%.mlir=$(LLVMDIR)/%.lowered.mlir)
+LLVM_IR=$(MLIR_SRC:generated/%.mlir=$(LLVMDIR)/%.ll)
+LLVM_OBJ=$(MLIR_SRC:generated/%.mlir=$(LLVMDIR)/%.o)
 
-# Convert MLIR to LLVM IR
-$(OUT_DIR)/%.ll: $(SRC_DIR)/%.mlir | $(OUT_DIR)
+all: test_metrics
+
+$(LLVMDIR)/%.lowered.mlir: generated/%.mlir
 	$(MLIR_OPT) \
 		--convert-math-to-llvm \
 		--convert-arith-to-llvm \
 		--convert-func-to-llvm \
 		--reconcile-unrealized-casts \
-		$< -o $(OUT_DIR)/$*.lowered.mlir
+		$< -o $@
 
-ifeq ($(GPU_TARGET),nvvm)
-	$(MLIR_OPT) --convert-gpu-to-nvvm $(OUT_DIR)/$*.lowered.mlir -o $(OUT_DIR)/$*.gpu.mlir
-	$(MLIR_TRANS) --mlir-to-llvmir $(OUT_DIR)/$*.gpu.mlir -o $@
-else ifeq ($(GPU_TARGET),rocdl)
-	$(MLIR_OPT) --convert-gpu-to-rocdl $(OUT_DIR)/$*.lowered.mlir -o $(OUT_DIR)/$*.gpu.mlir
-	$(MLIR_TRANS) --mlir-to-llvmir $(OUT_DIR)/$*.gpu.mlir -o $@
-else ifeq ($(GPU_TARGET),spirv)
-	$(MLIR_OPT) --convert-gpu-to-spirv $(OUT_DIR)/$*.lowered.mlir -o $(OUT_DIR)/$*.gpu.mlir
-	$(MLIR_TRANS) --mlir-to-spirv $(OUT_DIR)/$*.gpu.mlir -o $@
-else
-	$(MLIR_TRANS) --mlir-to-llvmir $(OUT_DIR)/$*.lowered.mlir -o $@
-endif
+$(LLVMDIR)/%.ll: $(LLVMDIR)/%.lowered.mlir
+	$(MLIR_TRANSLATE) --mlir-to-llvmir $< -o $@
 
-# Ensure output dir exists
-$(OUT_DIR):
-	mkdir -p $(OUT_DIR)
+$(LLVMDIR)/%.o: $(LLVMDIR)/%.ll
+	$(LLC) -filetype=obj $< -o $@
 
-# Clean
+test_metrics: main_test.cpp $(LLVM_OBJ)
+	$(CLANG) -O3 $^ -o $@
+
 clean:
-	rm -rf $(OUT_DIR)
-
-.PHONY: all clean
-
+	rm -f $(LLVMDIR)/* test_metrics

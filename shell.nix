@@ -15,9 +15,9 @@ pkgs.mkShell {
     valgrind
     cloc
     tree
-	doxygen 
-	graphviz 
-	bear
+    doxygen 
+    graphviz 
+    bear
 
     python312Full
     (python312.withPackages (ps: with ps; [
@@ -28,9 +28,11 @@ pkgs.mkShell {
       jupyter-client
       pyzmq
       pybind11
-	  sympy
-	  numpy
-	  matplotlib
+      sympy
+      numpy
+      matplotlib
+      pygments 
+      lark
     ]))
 
   ] ++ (with llvmPackages_18; [
@@ -41,14 +43,22 @@ pkgs.mkShell {
     openmp
   ]);
 
+
   shellHook = ''
+    echo "[+] Activating Python virtualenv..."
     if [ ! -d .venv ]; then
-      echo "[+] Creating .venv..."
       python3 -m venv .venv
       source .venv/bin/activate
+      echo "[+] Installing pip-only packages..."
+      pip install --upgrade pip
       pip install nanobind
+      pip install antlr4-python3-runtime==4.11.*
     else
       source .venv/bin/activate
     fi
+
+    export PYTHONPATH=$(pwd):$PYTHONPATH
+    echo "[+] Environment ready."
   '';
+
 }

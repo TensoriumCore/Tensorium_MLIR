@@ -4,6 +4,8 @@ from metric_codegen.optim.cse import run as run_cse
 from metric_codegen.backends.cpp import build_function
 from metric_codegen.frontends.driver import generate_metric_code
 
+from metric_codegen.frontends.metric_tensor import extract_metric_tensor
+from metric_codegen.frontends.driver import generate_metric_code
 import os
 
 def export_code_to_file(code: str, name: str, backend: str):
@@ -14,8 +16,7 @@ def export_code_to_file(code: str, name: str, backend: str):
         f.write(code)
     return filename
 
-# === Paramètre global du backend ===
-backend = "mlir"  # ou "cpp"
+backend = "mlir"
 
 m, r, t, theta, phi, a = symbols("m r t theta phi a")
 x, y, z = symbols("x y z")
@@ -23,16 +24,9 @@ dx, dy, dz = symbols("dx dy dz")
 dt, dr, dtheta, dphi = symbols("dt dr dtheta dphi")
 a_t = Function("a")(t)
 
-args_common = ['m', 'r', 't', 'theta', 'phi', 'a',
-               'x', 'y', 'z',
-               'dx', 'dy', 'dz',
-               'dt', 'dr', 'dtheta', 'dphi']
-
-args_values = [1.0, 10.0, 0.0, 1.0, 0.0,
-               0.5,
-               1.0, 1.0, 0.0,
-               0.0, 0.0, 0.0,
-               1.0, 1.0, 0.0, 0.0]
+args_common = ['t', 'r', 'theta', 'phi']
+constants = {'m': 1.0, 'a': 0.5}
+args_values = [1.0, 10.0, 0.1, 0.2]
 
 metrics = {
     "schwarzschild": r"-(1 - \frac{2m}{r})dt^2 + (1 - \frac{2m}{r})^{-1}dr^2 + r^2 d\theta^2 + r^2\sin^2\theta\,d\phi^2",
@@ -46,23 +40,37 @@ for name, latex_expr in metrics.items():
     print(f"LaTeX: {latex_expr}")
 
     try:
-        expr = parse_latex(latex_expr).subs(Function("a")(t), a)
+        expr = parse_latex(latex_expr)
+        expr = expr.subs({
+            Function("a")(t): constants['a'],
+            'dt': 1.0, 'dr': 1.0, 'dtheta': 0.0, 'dphi': 0.0,
+            'dx': 0.0, 'dy': 0.0, 'dz': 0.0  
+        })
         expr = simplify(expr)
+
         repl, reduced = run_cse(expr)
 
-        # Génération du code backend (MLIR ou C++)
         code = generate_metric_code(name, latex_expr, args_common, backend=backend)
-        print("\n--- Code généré ---\n")
+
+        print("\n--- Code ---\n")
         print(code)
 
-        # Export dans un fichier
         filepath = export_code_to_file(code, name, backend)
-        print(f"\nFichier exporté : {filepath}")
+        print(f"\nFile generated : {filepath}")
 
         if backend == "cpp":
             func = build_function(name, repl, reduced[0], args_common)
             result = func(*args_values)
-            print(f"\nRésultat d’évaluation : g = {result}")
+            print(f"\nResult: g = {result}")
+
+
+
+        latex_expr = r"-(1 - \frac{2m}{r})dt^2 + (1 - \frac{2m}{r})^{-1}dr^2 + r^2 d\theta^2 + r^2\sin^2\theta d\phi^2"
+        coord_order = ["t", "r", "theta", "phi"]
+        g = extract_metric_tensor(latex_expr, coord_order)
+        print(g)
 
     except Exception as e:
         print(f"Erreur lors du traitement de {name} : {e}")
+
+
