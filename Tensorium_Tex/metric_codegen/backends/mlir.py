@@ -3,74 +3,6 @@ from sympy import preorder_traversal, Symbol
 from sympy import Symbol
 from sympy import Number
 
-def _sympy_expr_to_mlir(expr, var_mapping, counter=[100]):
-    from sympy import Add, Mul, Pow
-
-    if expr in var_mapping:
-        return var_mapping[expr]
-
-    
-    if isinstance(expr, Symbol):
-        name = str(expr)
-        if name in var_mapping:
-            return var_mapping[name]
-        else:
-            tmp = f"%{name}"
-            const = f"%c{counter[0]}"
-            counter[0] += 1
-            mlir_ops.append(f"{const} = arith.constant 1.0 : f64")
-            var_mapping[name] = const
-            return const
-
-
-    if isinstance(expr, Number):
-        return str(float(expr))
-    if isinstance(expr, Mul):
-        args = [ _sympy_expr_to_mlir(arg, var_mapping, counter) for arg in expr.args ]
-        acc = args[0]
-        for arg in args[1:]:
-            tmp = f"%tmp{counter[0]}"
-            counter[0] += 1
-            line = f"{tmp} = arith.mulf {acc}, {arg} : f64"
-            var_mapping[tmp] = tmp  
-            acc = tmp
-        return acc
-
-    if isinstance(expr, Add):
-        args = [ _sympy_expr_to_mlir(arg, var_mapping, counter) for arg in expr.args ]
-        acc = args[0]
-        for arg in args[1:]:
-            tmp = f"%tmp{counter[0]}"
-            counter[0] += 1
-            line = f"{tmp} = arith.addf {acc}, {arg} : f64"
-            var_mapping[tmp] = tmp
-            acc = tmp
-        return acc
-
-    
-    
-    if isinstance(exp, Number) and int(exp) == exp:
-        base_mlir = _sympy_expr_to_mlir(base)
-        acc = base_mlir
-        abs_exp = abs(int(exp))
-        for _ in range(abs_exp - 1):
-            tmp = f"%x{counter[0]}"
-            counter[0] += 1
-            mlir_ops.append(f"{tmp} = arith.mulf {acc}, {base_mlir} : f64")
-            acc = tmp
-        if int(exp) > 0:
-            return acc
-        else:
-            inv = f"%x{counter[0]}"
-            counter[0] += 1
-            mlir_ops.append(f"{inv} = arith.divf 1.0, {acc} : f64")
-            return inv
-    raise NotImplementedError(f"Unsupported expr type: {expr}")
-
-
-
-
-
 from sympy import Symbol, Number, Add, Mul, Pow, Function, sin, cos, exp, preorder_traversal
 
 def generate_mlir_code(name: str, repl: list, reduced_expr, args: list[str]) -> str:
@@ -161,7 +93,6 @@ def generate_mlir_code(name: str, repl: list, reduced_expr, args: list[str]) -> 
 
         raise NotImplementedError(f"Unsupported expr: {expr} (type {type(expr)})")
 
-    # Inject constants for unknown symbols (e.g., a(t) → %a = 1.0)
     for sym in preorder_traversal(reduced_expr):
         if isinstance(sym, Symbol):
             sname = str(sym)
@@ -172,7 +103,6 @@ def generate_mlir_code(name: str, repl: list, reduced_expr, args: list[str]) -> 
                 var_mapping[sname] = tmp
 
     result_expr = _sympy_expr_to_mlir(reduced_expr)
-# Après avoir calculé result_expr
     zero = f"%c{counter[0]}"
     counter[0] += 1
     mlir_ops.append(f"{zero} = arith.constant 0.0 : f64")
@@ -192,42 +122,179 @@ module {{
 """.strip()
 
 
+
 def generate_full_metric_mlir(name, latex_expr, coord_order, args):
+
+    from sympy import symbols, simplify
     from metric_codegen.frontends.metric_tensor import extract_metric_tensor
     from metric_codegen.optim.cse import run as run_cse
-    import metric_codegen.backends.mlir as mlir_backend
 
-    # 1) on récupère g (Sympy Matrix)
-    g = extract_metric_tensor(latex_expr, coord_order)
-    n = len(coord_order)
+    dvars = symbols("dt dr dtheta dphi dx dy dz")
+    replacements = {d: 1.0 for d in dvars if str(d) not in args}
+    g = simplify(extract_metric_tensor(latex_expr, coord_order).subs(replacements))
 
-    body = []
-    body.append("  %buf = memref.alloc() : memref<4x4xf64>")
+    mlir = []
+    mlir.append("module {")
+    arg_sig = ", ".join(f"%{a}: f64" for a in args)
+    mlir.append(f"  func.func @{name}({arg_sig}) -> memref<4x4xf64> {{")
+    mlir.append("    %buf = memref.alloc() : memref<4x4xf64>")
+    mlir.append("    %c0_f64 = arith.constant 0.0 : f64")
 
-    zero = "  %c0 = arith.constant 0.0 : f64"
-    body.append(zero)
+    counter = [1] 
+    idx_done = set()
 
-    for i in range(n):
-        for j in range(n):
-            expr = g[i,j]
-            # applique CSE local
+    for i in range(len(coord_order)):
+        for j in range(len(coord_order)):
+            expr = g[i, j]
             repl, reduced = run_cse(expr)
             core = reduced[0]
 
-            snippet = mlir_backend._sympy_to_mlir_snippet(
-                repl, core, args, result_name="gij"
-            )
-            body.extend("  " + line for line in snippet.splitlines())
+            for line in _sympy_to_mlir_snippet(repl, core, args, counter, f"g{i}{j}"):
+                mlir.append(f"    {line}")
 
-            body.append(f"  memref.store %gij, %buf[{i},{j}] : memref<4x4xf64>")
+            for v in (i, j):
+                if v not in idx_done:
+                    mlir.append(f"    %c{v}_idx = arith.constant {v} : index")
+                    idx_done.add(v)
 
-    args_sig = ", ".join(f"%{a}: f64" for a in args)
-    return f"""
-module {{
-  func.func @{name}({args_sig}) -> memref<4x4xf64> {{
-{chr(10).join(body)}
-    return %buf : memref<4x4xf64>
-  }}
-}}
-""".strip()
+            mlir.append(f"    memref.store %g{i}{j}, %buf[%c{i}_idx, %c{j}_idx] : memref<4x4xf64>")
 
+    mlir.append("    return %buf : memref<4x4xf64>")
+    mlir.append("  }")
+    mlir.append("}")
+
+    return "\n".join(mlir)
+
+
+def uniquify_mlir_ssa(mlir_code: str) -> str:
+    import re
+    counter = 0
+    ssa_map = {}
+    def_vars = set()
+
+    for line in mlir_code.splitlines():
+        m = re.match(r"\s*(%[a-zA-Z_][a-zA-Z0-9_]*)\s*=", line)
+        if m:
+            def_vars.add(m.group(1))
+
+    def replace_ssa(match):
+        nonlocal counter
+        name = match.group(0)
+        if name not in def_vars:
+            return name  
+        if name in ssa_map:
+            return ssa_map[name]
+        new_name = f"%{name[1:]}__{counter}"
+        ssa_map[name] = new_name
+        counter += 1
+        return new_name
+
+    def update_line(line):
+        return re.sub(r"%[a-zA-Z_][a-zA-Z0-9_]*", replace_ssa, line)
+
+    return "\n".join(update_line(line) for line in mlir_code.splitlines())
+
+
+
+def uniquify_mlir_ssa(mlir_code: str) -> str:
+    import re
+    counter = 0
+    ssa_map = {}
+    def_vars = set()
+
+    for line in mlir_code.splitlines():
+        m = re.match(r"\s*(%[a-zA-Z_][a-zA-Z0-9_]*)\s*=", line)
+        if m:
+            def_vars.add(m.group(1))
+
+    def replace_ssa(match):
+        nonlocal counter
+        name = match.group(0)
+        if name not in def_vars:
+            return name  
+        if name in ssa_map:
+            return ssa_map[name]
+        new_name = f"%{name[1:]}__{counter}"
+        ssa_map[name] = new_name
+        counter += 1
+        return new_name
+
+    def update_line(line):
+        return re.sub(r"%[a-zA-Z_][a-zA-Z0-9_]*", replace_ssa, line)
+
+    return "\n".join(update_line(line) for line in mlir_code.splitlines())
+
+def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
+     from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp
+
+    lines   = []
+    var_map = {a: f"%{a}" for a in args}          # t, r, …
+    func_op = {sin: "math.sin", cos: "math.cos", exp: "math.exp"}
+
+    def fresh(pref):
+        name = f"%{pref}{counter[0]}"
+        counter[0] += 1
+        return name
+
+    def emit(expr):      
+        if isinstance(expr, Symbol):
+            key = str(expr)
+            if key not in var_map: 
+                cst = fresh("cU") 
+                lines.append(f"{cst} = arith.constant 0.0 : f64  // undef {key}")
+                var_map[key] = cst
+            return var_map[key]
+
+        if isinstance(expr, Number):
+            cst = fresh("c")
+            lines.append(f"{cst} = arith.constant {float(expr)} : f64")
+            return cst
+
+        if isinstance(expr, Function) and expr.func in func_op:
+            arg = emit(expr.args[0])
+            tmp = fresh("x")
+            lines.append(f"{tmp} = {func_op[expr.func]} {arg} : f64")
+            return tmp
+
+        if isinstance(expr, Mul):
+            args_mlir = [emit(a) for a in expr.args]
+            acc = args_mlir[0]
+            for v in args_mlir[1:]:
+                tmp = fresh("x")
+                lines.append(f"{tmp} = arith.mulf {acc}, {v} : f64")
+                acc = tmp
+            return acc
+
+        if isinstance(expr, Add):
+            args_mlir = [emit(a) for a in expr.args]
+            acc = args_mlir[0]
+            for v in args_mlir[1:]:
+                tmp = fresh("x")
+                lines.append(f"{tmp} = arith.addf {acc}, {v} : f64")
+                acc = tmp
+            return acc
+
+        if isinstance(expr, Pow):
+            base, expn = expr.args
+            if isinstance(expn, Number) and int(expn) == expn:
+                acc = emit(base)
+                for _ in range(abs(int(expn)) - 1):
+                    tmp = fresh("x")
+                    lines.append(f"{tmp} = arith.mulf {acc}, {emit(base)} : f64")
+                    acc = tmp
+                if int(expn) < 0:
+                    one = fresh("c")
+                    lines.append(f"{one} = arith.constant 1.0 : f64")
+                    inv = fresh("x")
+                    lines.append(f"{inv} = arith.divf {one}, {acc} : f64")
+                    acc = inv
+                return acc
+        raise NotImplementedError(f"expr {expr}")
+
+    for sym, expr in repl:
+        val = emit(expr)
+        lines.append(f"%{sym} = arith.addf {val}, %c0_f64 : f64") 
+
+    res_val = emit(core)
+    lines.append(f"%{result_name} = arith.addf {res_val}, %c0_f64 : f64")
+    return lines

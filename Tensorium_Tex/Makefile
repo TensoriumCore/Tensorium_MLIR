@@ -17,6 +17,7 @@ $(LLVMDIR)/%.lowered.mlir: generated/%.mlir
 		--convert-math-to-llvm \
 		--convert-arith-to-llvm \
 		--convert-func-to-llvm \
+		--finalize-memref-to-llvm \
 		--reconcile-unrealized-casts \
 		$< -o $@
 

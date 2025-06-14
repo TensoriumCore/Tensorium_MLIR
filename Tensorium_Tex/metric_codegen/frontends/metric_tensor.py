@@ -1,8 +1,6 @@
-# metric_codegen/frontends/metric_tensor.py
 
-from sympy import symbols, Matrix, simplify, Pow, Mul
 from sympy.parsing.latex import parse_latex
-
+from sympy import symbols, Matrix, simplify, Pow, Mul
 def extract_metric_tensor(latex_expr: str, coord_order: list[str]) -> Matrix:
     expr = simplify(parse_latex(latex_expr))
 
@@ -11,21 +9,22 @@ def extract_metric_tensor(latex_expr: str, coord_order: list[str]) -> Matrix:
     g = Matrix.zeros(n)
 
     for term in expr.expand().as_ordered_terms():
+
         if isinstance(term, Pow) and term.base in dvars and term.exp == 2:
             i = dvars.index(term.base)
-            coeff = term / term 
+            coeff = term / (term.base ** term.exp)
             g[i, i] += simplify(coeff)
             continue
 
         if isinstance(term, Mul):
             which = [i for i, dv in enumerate(dvars) if term.has(dv)]
-            if len(which) == 1:
+            if len(which) == 1: 
                 dv = dvars[which[0]]
                 if term.has(dv**2):
-                    coeff = term / (dv*dv)
+                    coeff = term / (dv**2)
                     g[which[0], which[0]] += simplify(coeff)
                 continue
-            elif len(which) == 2:
+            elif len(which) == 2:  
                 i, j = which
                 coeff = term / (dvars[i] * dvars[j])
                 g[i, j] += simplify(coeff)
@@ -34,3 +33,4 @@ def extract_metric_tensor(latex_expr: str, coord_order: list[str]) -> Matrix:
                 continue
 
     return simplify(g)
+
