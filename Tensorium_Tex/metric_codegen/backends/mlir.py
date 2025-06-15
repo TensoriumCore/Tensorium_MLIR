@@ -3,7 +3,8 @@ from sympy import preorder_traversal, Symbol
 from sympy import Symbol
 from sympy import Number
 
-from sympy import Symbol, Number, Add, Mul, Pow, Function, sin, cos, exp, preorder_traversal
+from sympy import tan, cot
+from sympy import Symbol, Number, Add, Mul, Pow, Function, sin, cos, exp, tan, preorder_traversal
 
 def generate_mlir_code(name: str, repl: list, reduced_expr, args: list[str]) -> str:
     mlir_ops = []
@@ -227,10 +228,9 @@ def uniquify_mlir_ssa(mlir_code: str) -> str:
 def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
     from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp
 
-    print(f"[MLIR] snippet called for {result_name} with args =", args)
     lines = []
     var_map = {a: f"%{a}" for a in args}          # t, r, …
-    func_op = {sin: "math.sin", cos: "math.cos", exp: "math.exp"}
+    func_op = {sin: "math.sin", cos: "math.cos", exp: "math.exp", tan: "math.tan", cot: "math.cot"}
 
     def fresh(pref="x"):
         name = f"%{pref}{counter[0]}"

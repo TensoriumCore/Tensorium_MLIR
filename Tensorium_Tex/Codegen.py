@@ -4,6 +4,8 @@ from metric_codegen.optim.cse import run as run_cse
 from metric_codegen.backends.cpp import build_function
 from metric_codegen.frontends.driver import generate_metric_code
 from metric_codegen.frontends.metric_tensor import extract_metric_tensor
+from metric_codegen.frontends.christoffel import build_christoffel_mlir
+from metric_codegen.frontends.christoffel import gen_numeric_christoffel_mlir
 import os
 
 
@@ -46,7 +48,6 @@ metrics = {
 
 for name, latex_expr in metrics.items():
     print(f"\n=== {name.upper()} ===")
-    print(f"LaTeX: {latex_expr}")
 
     try:
         expr = parse_latex(latex_expr)
@@ -62,7 +63,6 @@ for name, latex_expr in metrics.items():
         code = generate_metric_code(name, latex_expr, args_common, backend=backend)
         if code:
             print("\n--- Code ---\n")
-            print(code)
 
         filepath = export_code_to_file(code, name, backend)
         if filepath:
@@ -81,3 +81,18 @@ for name, latex_expr in metrics.items():
 
     except Exception as e:
         print(f"Error : {name} : {e}")
+
+coords      = symbols("t r theta phi")
+latex       = r"-(1-\frac{2m}{r})dt^2 + (1-\frac{2m}{r})^{-1}dr^2 + r^2 d\theta^2 + r^2\sin^2\theta\,d\phi^2"
+args_common = ['t','r','theta','phi','m','a']
+
+christ_mlir = build_christoffel_mlir(
+    "schwarzschild_christoffel",
+    latex, coords, args_common
+)
+
+with open("generated/schwarzschild_christoffel.mlir","w") as f:
+    f.write(christ_mlir)
+mlir_code = gen_numeric_christoffel_mlir()
+with open("generated/christoffel_numeric.mlir", "w") as f:
+    f.write(mlir_code)

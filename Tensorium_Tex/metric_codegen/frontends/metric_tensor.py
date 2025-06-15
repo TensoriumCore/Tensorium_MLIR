@@ -31,6 +31,6 @@ def extract_metric_tensor(latex_expr: str, coord_order: list[str]) -> Matrix:
                 if i != j:
                     g[j, i] += simplify(coeff)
                 continue
-
+    print(f"Extracted metric tensor: {simplify(g)}")
     return simplify(g)
 
