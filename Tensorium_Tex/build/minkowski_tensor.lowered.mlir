@@ -1,6 +1,6 @@
 module {
   llvm.func @malloc(i64) -> !llvm.ptr
-  llvm.func @minkowski_tensor(%arg0: f64, %arg1: f64, %arg2: f64, %arg3: f64) -> !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)> {
+  llvm.func @minkowski_tensor(%arg0: f64, %arg1: f64, %arg2: f64, %arg3: f64, %arg4: f64, %arg5: f64) -> !llvm.struct<(ptr, ptr, i64, array<2 x i64>, array<2 x i64>)> {
     %0 = llvm.mlir.constant(1.000000e+00 : f64) : f64
     %1 = llvm.mlir.constant(-1.000000e+00 : f64) : f64
     %2 = llvm.mlir.constant(3 : index) : i64

@@ -1,5 +1,5 @@
 module {
-  func.func @minkowski_tensor(%t: f64, %r: f64, %theta: f64, %phi: f64) -> memref<4x4xf64> {
+  func.func @minkowski_tensor(%t: f64, %r: f64, %theta: f64, %phi: f64, %m: f64, %a: f64) -> memref<4x4xf64> {
     %buf = memref.alloc() : memref<4x4xf64>
     %c0_f64 = arith.constant 0.0 : f64
     %c1 = arith.constant -1.0 : f64

@@ -225,13 +225,14 @@ def uniquify_mlir_ssa(mlir_code: str) -> str:
     return "\n".join(update_line(line) for line in mlir_code.splitlines())
 
 def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
-     from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp
+    from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp
 
-    lines   = []
+    print(f"[MLIR] snippet called for {result_name} with args =", args)
+    lines = []
     var_map = {a: f"%{a}" for a in args}          # t, r, …
     func_op = {sin: "math.sin", cos: "math.cos", exp: "math.exp"}
 
-    def fresh(pref):
+    def fresh(pref="x"):
         name = f"%{pref}{counter[0]}"
         counter[0] += 1
         return name
@@ -240,9 +241,8 @@ def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
         if isinstance(expr, Symbol):
             key = str(expr)
             if key not in var_map: 
-                cst = fresh("cU") 
-                lines.append(f"{cst} = arith.constant 0.0 : f64  // undef {key}")
-                var_map[key] = cst
+                raise ValueError(f"[MLIR] Variable `{key}` not in args, cannot lower to MLIR.")
+
             return var_map[key]
 
         if isinstance(expr, Number):

@@ -26,15 +26,22 @@ dx, dy, dz = symbols("dx dy dz")
 dt, dr, dtheta, dphi = symbols("dt dr dtheta dphi")
 a_t = Function("a")(t)
 
-args_common = ['t', 'r', 'theta', 'phi']
 constants = {'m': 1.0, 'a': 0.5}
+args_common = ['t', 'r', 'theta', 'phi', 'm', 'a']
+coord_only  = ['t', 'r', 'theta', 'phi']
 args_values = [1.0, 10.0, 0.1, 0.2]
 
 metrics = {
     "schwarzschild": r"-(1 - \frac{2m}{r})dt^2 + (1 - \frac{2m}{r})^{-1}dr^2 + r^2 d\theta^2 + r^2\sin^2\theta\,d\phi^2",
     "minkowski":     r"-dt^2 + dr^2 + r^2 d\theta^2 + r^2 \sin^2\theta d\phi^2",
     "flrw_flat":     r"-dt^2 + a(t)^2 (dr^2 + r^2 d\theta^2 + r^2 \sin^2\theta d\phi^2)",
-    "kerr_schild_simple": r"-dt^2 + dx^2 + dy^2 + dz^2 + \frac{2m r^3}{r^4 + a^2 z^2} (dt + \frac{r x + a y}{r^2 + a^2} dx + \frac{r y - a x}{r^2 + a^2} dy + \frac{z}{r} dz)^2"
+    "kerr_schild_simple": (
+    r"-dt^{2} + dx^{2} + dy^{2} + dz^{2}"
+    r" + \frac{2\,m\,r^{3}}{r^{4} + a^{2} z^{2}}"
+    r"\left(dt"
+    r" + \frac{r\,x + a\,y}{\,r^{2} + a^{2}\,}\,dx"
+    r" + \frac{r\,y - a\,x}{\,r^{2} + a^{2}\,}\,dy"
+    r" + \frac{z}{r}\,dz\right)^{2}")
 }
 
 for name, latex_expr in metrics.items():
@@ -65,7 +72,7 @@ for name, latex_expr in metrics.items():
         tensor_code = generate_full_metric_mlir(
             name=f"{name}_tensor",
             latex_expr=latex_expr,
-            coord_order=args_common,
+            coord_order=['t', 'r', 'theta', 'phi'],
             args=args_common
         )
         filepath_tensor = export_code_to_file(tensor_code, f"{name}_tensor", backend="mlir")

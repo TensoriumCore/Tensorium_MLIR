@@ -17,6 +17,8 @@ def generate_metric_code(name, latex_expr, args, backend="cpp"):
 
     if "a" not in args:
         expr = expr.subs({Function("a")(t): 0.5, symbols("a"): 0.5})
+    else:
+        expr = expr.subs({Function("a")(t): symbols("a")})
     expr = simplify(expr)
     repl, reduced = run_cse(expr)
 
