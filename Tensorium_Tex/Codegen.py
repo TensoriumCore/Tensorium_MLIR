@@ -37,13 +37,7 @@ metrics = {
     "schwarzschild": r"-(1 - \frac{2m}{r})dt^2 + (1 - \frac{2m}{r})^{-1}dr^2 + r^2 d\theta^2 + r^2\sin^2\theta\,d\phi^2",
     "minkowski":     r"-dt^2 + dr^2 + r^2 d\theta^2 + r^2 \sin^2\theta d\phi^2",
     "flrw_flat":     r"-dt^2 + a(t)^2 (dr^2 + r^2 d\theta^2 + r^2 \sin^2\theta d\phi^2)",
-    "kerr_schild_simple": (
-    r"-dt^{2} + dx^{2} + dy^{2} + dz^{2}"
-    r" + \frac{2\,m\,r^{3}}{r^{4} + a^{2} z^{2}}"
-    r"\left(dt"
-    r" + \frac{r\,x + a\,y}{\,r^{2} + a^{2}\,}\,dx"
-    r" + \frac{r\,y - a\,x}{\,r^{2} + a^{2}\,}\,dy"
-    r" + \frac{z}{r}\,dz\right)^{2}")
+    "Random":       r"-e^{\sin t} dt^2 + (1 + r^2) dr^2 + 2 r \sin\theta\, dr\, d\phi + r^2 d\theta^2 + \cos\theta\, d\phi^2",
 }
 
 for name, latex_expr in metrics.items():
@@ -59,15 +53,7 @@ for name, latex_expr in metrics.items():
         expr = simplify(expr)
 
         repl, reduced = run_cse(expr)
-
-        code = generate_metric_code(name, latex_expr, args_common, backend=backend)
-        if code:
-            print("\n--- Code ---\n")
-
-        filepath = export_code_to_file(code, name, backend)
-        if filepath:
-            print(f"  → MLIR scalar code generated: {filepath}")
-
+ 
         from metric_codegen.backends.mlir import generate_full_metric_mlir
         tensor_code = generate_full_metric_mlir(
             name=f"{name}_tensor",

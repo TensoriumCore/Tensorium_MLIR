@@ -12,13 +12,12 @@ pkgs.mkShell {
     gcc
     openblas
     openmpi
-    valgrind
     cloc
     tree
     doxygen 
     graphviz 
     bear
-
+	enzyme
     python312Full
     (python312.withPackages (ps: with ps; [
       pip
