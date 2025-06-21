@@ -13,7 +13,9 @@ struct Memref {
 
 extern "C" Memref<2> schwarzschild_tensor      (double, double, double, double, double, double);
 extern "C" Memref<2> minkowski_tensor          (double, double, double, double, double, double);
-extern "C" Memref<3> schwarzschild_christoffel (double, double, double, double, double, double);
+extern "C" Memref<2> Random_tensor			   (double, double, double, double, double, double);
+extern "C" Memref<2> flrw_flat_tensor		   (double, double, double, double, double, double);
+
 extern "C" void metric_generator(Memref<1> /*x*/, Memref<2> g) {
     int64_t N0 = g.sizes[0];
     int64_t N1 = g.sizes[1];
@@ -27,7 +29,6 @@ extern "C" void metric_generator(Memref<1> /*x*/, Memref<2> g) {
     }
 }
 
-extern "C" Memref<3> christoffel_numeric(double, double, double, double, double, double);
 
 void print_metric(const char* title, const Memref<2>& g) {
     std::cout << title << '\n';
@@ -80,14 +81,11 @@ int main() {
 
     auto gS  = schwarzschild_tensor      (t, r, th, ph, m, a);
     auto gM  = minkowski_tensor          (t, r, th, ph, m, a);
-    auto ΓA  = schwarzschild_christoffel (t, r, th, ph, m, a);
-    auto ΓN  = christoffel_numeric       (t, r, th, ph, m, a);
-
+	auto gR	 = Random_tensor			 (t, r, th, ph, m, a);
+	auto gFL = flrw_flat_tensor			 (t, r, th, ph, m, a);
     print_metric("Schwarzschild metric :", gS);
     print_metric("\nMinkowski metric :",    gM);
-    print_christoffel("Analytic Christoffel", ΓA);
-    print_christoffel("Numeric Christoffel",  ΓN);
-    compare_christoffel(ΓA, ΓN);
-
+	print_metric("\nRandom metric",		gR);
+	print_metric("\nFLRW metric",		gFL);
     return 0;
 }

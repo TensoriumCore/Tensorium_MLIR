@@ -1,36 +1,48 @@
-
 from sympy.parsing.latex import parse_latex
-from sympy import symbols, Matrix, simplify, Pow, Mul
-def extract_metric_tensor(latex_expr: str, coord_order: list[str]) -> Matrix:
-    expr = simplify(parse_latex(latex_expr))
+from sympy import Matrix, simplify, symbols, expand, Pow, Mul
 
-    dvars = [symbols(f'd{v}') for v in coord_order]
-    n = len(dvars)
-    g = Matrix.zeros(n)
 
-    for term in expr.expand().as_ordered_terms():
+import re
+from textwrap import dedent
+from sympy import E, Symbol, simplify
+from sympy.parsing.latex import parse_latex as _sympy_parse_latex
 
-        if isinstance(term, Pow) and term.base in dvars and term.exp == 2:
-            i = dvars.index(term.base)
-            coeff = term / (term.base ** term.exp)
-            g[i, i] += simplify(coeff)
+_BAD_MACROS = (r'\bigl', r'\bigr', r'\left', r'\right')
+
+def parse_latex(tex: str):
+    for bad in _BAD_MACROS:
+        tex = tex.replace(bad, '')
+    tex = re.sub(r'\s+', ' ', dedent(tex)).strip()
+
+    expr = _sympy_parse_latex(tex)
+
+    expr = expr.subs(Symbol('e'), E)
+    return simplify(expr)
+
+def extract_metric_tensor(latex_expr: str, coord_order: list[str]):
+    expr   = simplify(parse_latex(latex_expr))
+    dvars  = [symbols(f'd{c}') for c in coord_order]
+    n      = len(dvars)
+    g      = Matrix.zeros(n)
+
+    for term in expand(expr).as_ordered_terms():
+
+        present = [dv for dv in dvars if term.has(dv)]
+        if not present:
             continue
 
-        if isinstance(term, Mul):
-            which = [i for i, dv in enumerate(dvars) if term.has(dv)]
-            if len(which) == 1: 
-                dv = dvars[which[0]]
-                if term.has(dv**2):
-                    coeff = term / (dv**2)
-                    g[which[0], which[0]] += simplify(coeff)
-                continue
-            elif len(which) == 2:  
-                i, j = which
-                coeff = term / (dvars[i] * dvars[j])
-                g[i, j] += simplify(coeff)
-                if i != j:
-                    g[j, i] += simplify(coeff)
-                continue
-    print(f"Extracted metric tensor: {simplify(g)}")
-    return simplify(g)
+        if len(present) == 1:
+            dv   = present[0]
+            i    = dvars.index(dv)
+            coeff = simplify(term / (dv**2))
+            g[i, i] += coeff
+            continue
 
+        if len(present) == 2:
+            i, j = sorted([dvars.index(p) for p in present])
+            coeff = simplify(term / (dvars[i] * dvars[j]) / 2)
+            g[i, j] += coeff
+            g[j, i] += coeff
+            continue
+
+    return simplify(g)

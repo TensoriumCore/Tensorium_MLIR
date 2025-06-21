@@ -1,5 +1,5 @@
 module {
-  func.func @minkowski_tensor(%t: f64, %r: f64, %theta: f64, %phi: f64, %m: f64, %a: f64) -> memref<4x4xf64> {
+  func.func @flrw_flat_tensor(%t: f64, %r: f64, %theta: f64, %phi: f64, %m: f64, %a: f64) -> memref<4x4xf64> {
     %buf = memref.alloc() : memref<4x4xf64>
     %c0_f64 = arith.constant 0.0 : f64
     %c1 = arith.constant -1.0 : f64
@@ -21,7 +21,7 @@ module {
     %c5 = arith.constant 0.0 : f64
     %g10 = arith.addf %c5, %c0_f64 : f64
     memref.store %g10, %buf[%c1_idx, %c0_idx] : memref<4x4xf64>
-    %c6 = arith.constant 1.0 : f64
+    %c6 = arith.constant 0.25 : f64
     %g11 = arith.addf %c6, %c0_f64 : f64
     memref.store %g11, %buf[%c1_idx, %c1_idx] : memref<4x4xf64>
     %c7 = arith.constant 0.0 : f64
@@ -36,33 +36,35 @@ module {
     %c10 = arith.constant 0.0 : f64
     %g21 = arith.addf %c10, %c0_f64 : f64
     memref.store %g21, %buf[%c2_idx, %c1_idx] : memref<4x4xf64>
-    %x11 = arith.mulf %r, %r : f64
-    %g22 = arith.addf %x11, %c0_f64 : f64
+    %c11 = arith.constant 0.25 : f64
+    %x13 = arith.mulf %r, %r : f64
+    %x12 = arith.mulf %c11, %x13 : f64
+    %g22 = arith.addf %x12, %c0_f64 : f64
     memref.store %g22, %buf[%c2_idx, %c2_idx] : memref<4x4xf64>
-    %c12 = arith.constant 0.0 : f64
-    %g23 = arith.addf %c12, %c0_f64 : f64
-    memref.store %g23, %buf[%c2_idx, %c3_idx] : memref<4x4xf64>
-    %c13 = arith.constant 0.0 : f64
-    %g30 = arith.addf %c13, %c0_f64 : f64
-    memref.store %g30, %buf[%c3_idx, %c0_idx] : memref<4x4xf64>
     %c14 = arith.constant 0.0 : f64
-    %g31 = arith.addf %c14, %c0_f64 : f64
-    memref.store %g31, %buf[%c3_idx, %c1_idx] : memref<4x4xf64>
+    %g23 = arith.addf %c14, %c0_f64 : f64
+    memref.store %g23, %buf[%c2_idx, %c3_idx] : memref<4x4xf64>
     %c15 = arith.constant 0.0 : f64
-    %g32 = arith.addf %c15, %c0_f64 : f64
+    %g30 = arith.addf %c15, %c0_f64 : f64
+    memref.store %g30, %buf[%c3_idx, %c0_idx] : memref<4x4xf64>
+    %c16 = arith.constant 0.0 : f64
+    %g31 = arith.addf %c16, %c0_f64 : f64
+    memref.store %g31, %buf[%c3_idx, %c1_idx] : memref<4x4xf64>
+    %c17 = arith.constant 0.0 : f64
+    %g32 = arith.addf %c17, %c0_f64 : f64
     memref.store %g32, %buf[%c3_idx, %c2_idx] : memref<4x4xf64>
-    %c16 = arith.constant 1.0 : f64
-    %x18 = arith.mulf %r, %r : f64
-    %x17 = arith.mulf %c16, %x18 : f64
-    %c20 = arith.constant 1.0 : f64
-    %x21 = arith.mulf %c20, %theta : f64
-    %x22 = math.sin %x21 : f64
-    %c24 = arith.constant 1.0 : f64
-    %x25 = arith.mulf %c24, %theta : f64
-    %x26 = math.sin %x25 : f64
-    %x23 = arith.mulf %x22, %x26 : f64
-    %x19 = arith.mulf %x17, %x23 : f64
-    %g33 = arith.addf %x19, %c0_f64 : f64
+    %c18 = arith.constant 0.25 : f64
+    %x20 = arith.mulf %r, %r : f64
+    %x19 = arith.mulf %c18, %x20 : f64
+    %c22 = arith.constant 1.0 : f64
+    %x23 = arith.mulf %c22, %theta : f64
+    %x24 = math.sin %x23 : f64
+    %c26 = arith.constant 1.0 : f64
+    %x27 = arith.mulf %c26, %theta : f64
+    %x28 = math.sin %x27 : f64
+    %x25 = arith.mulf %x24, %x28 : f64
+    %x21 = arith.mulf %x19, %x25 : f64
+    %g33 = arith.addf %x21, %c0_f64 : f64
     memref.store %g33, %buf[%c3_idx, %c3_idx] : memref<4x4xf64>
     return %buf : memref<4x4xf64>
   }

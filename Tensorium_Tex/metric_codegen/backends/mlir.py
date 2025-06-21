@@ -2,9 +2,9 @@
 from sympy import preorder_traversal, Symbol
 from sympy import Symbol
 from sympy import Number
-
 from sympy import tan, cot
 from sympy import Symbol, Number, Add, Mul, Pow, Function, sin, cos, exp, tan, preorder_traversal
+from sympy import E, pi
 
 def generate_mlir_code(name: str, repl: list, reduced_expr, args: list[str]) -> str:
     mlir_ops = []
@@ -226,7 +226,7 @@ def uniquify_mlir_ssa(mlir_code: str) -> str:
     return "\n".join(update_line(line) for line in mlir_code.splitlines())
 
 def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
-    from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp
+    from sympy import Symbol, Number, Function, Add, Mul, Pow, sin, cos, exp, tan, cot, Rational
 
     lines = []
     var_map = {a: f"%{a}" for a in args}          # t, r, …
@@ -237,34 +237,59 @@ def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
         counter[0] += 1
         return name
 
-    def emit(expr):      
+    def emit(expr):
+        # Variable
         if isinstance(expr, Symbol):
             key = str(expr)
-            if key not in var_map: 
+            if key not in var_map:
                 raise ValueError(f"[MLIR] Variable `{key}` not in args, cannot lower to MLIR.")
-
             return var_map[key]
 
+        # Constante numérique
         if isinstance(expr, Number):
             cst = fresh("c")
             lines.append(f"{cst} = arith.constant {float(expr)} : f64")
             return cst
 
-        if isinstance(expr, Function) and expr.func in func_op:
-            arg = emit(expr.args[0])
+        # Négation explicite
+        if isinstance(expr, Mul) and expr.args[0] == -1 and len(expr.args) == 2:
+            val = emit(expr.args[1])
             tmp = fresh("x")
-            lines.append(f"{tmp} = {func_op[expr.func]} {arg} : f64")
+            lines.append(f"{tmp} = arith.negf {val} : f64")
             return tmp
 
-        if isinstance(expr, Mul):
-            args_mlir = [emit(a) for a in expr.args]
-            acc = args_mlir[0]
-            for v in args_mlir[1:]:
-                tmp = fresh("x")
-                lines.append(f"{tmp} = arith.mulf {acc}, {v} : f64")
-                acc = tmp
-            return acc
+        # Fraction rationnelle
+        if isinstance(expr, Rational):
+            num = fresh("c")
+            den = fresh("c")
+            lines.append(f"{num} = arith.constant {float(expr.p)} : f64")
+            lines.append(f"{den} = arith.constant {float(expr.q)} : f64")
+            tmp = fresh("x")
+            lines.append(f"{tmp} = arith.divf {num}, {den} : f64")
+            return tmp
 
+        # Division ou multiplication
+        if isinstance(expr, Mul):
+            numer = []
+            denom = []
+            for a in expr.args:
+                if isinstance(a, Pow) and a.exp == -1:
+                    denom.append(a.base)
+                else:
+                    numer.append(a)
+            num_val = emit(numer[0]) if numer else None
+            for n in numer[1:]:
+                tmp = fresh("x")
+                lines.append(f"{tmp} = arith.mulf {num_val}, {emit(n)} : f64")
+                num_val = tmp
+            if denom:
+                den_val = emit(denom[0]) if len(denom) == 1 else emit(Mul(*denom))
+                tmp = fresh("x")
+                lines.append(f"{tmp} = arith.divf {num_val}, {den_val} : f64")
+                return tmp
+            return num_val
+
+        # Addition
         if isinstance(expr, Add):
             args_mlir = [emit(a) for a in expr.args]
             acc = args_mlir[0]
@@ -274,8 +299,10 @@ def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
                 acc = tmp
             return acc
 
+        # Puissance
         if isinstance(expr, Pow):
             base, expn = expr.args
+            # Puissance entière positive/négative
             if isinstance(expn, Number) and int(expn) == expn:
                 acc = emit(base)
                 for _ in range(abs(int(expn)) - 1):
@@ -289,11 +316,27 @@ def _sympy_to_mlir_snippet(repl, core, args, counter, result_name):
                     lines.append(f"{inv} = arith.divf {one}, {acc} : f64")
                     acc = inv
                 return acc
-        raise NotImplementedError(f"expr {expr}")
+            else:
+                base_mlir = emit(base)
+                exp_mlir = emit(expn)
+                tmp = fresh("x")
+                lines.append(f"{tmp} = math.powf {base_mlir}, {exp_mlir} : f64")
+                return tmp
 
+        # Fonction mathématique connue
+        if isinstance(expr, Function) and expr.func in func_op:
+            arg = emit(expr.args[0])
+            tmp = fresh("x")
+            lines.append(f"{tmp} = {func_op[expr.func]} {arg} : f64")
+            return tmp
+
+        # Fallback explicite
+        raise NotImplementedError(f"[MLIR-ERROR] Can't lower sympy expr: {expr} ({type(expr)})")
+
+    # Remplacement des sous-expressions communes (si besoin)
     for sym, expr in repl:
         val = emit(expr)
-        lines.append(f"%{sym} = arith.addf {val}, %c0_f64 : f64") 
+        lines.append(f"%{sym} = arith.addf {val}, %c0_f64 : f64")
 
     res_val = emit(core)
     lines.append(f"%{result_name} = arith.addf {res_val}, %c0_f64 : f64")
