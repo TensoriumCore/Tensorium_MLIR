@@ -13,7 +13,6 @@ python3 Codegen.py --backend mlir/cpp && make
 ## Status
 This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
 
-
 ## Goals
 
 - [x] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
