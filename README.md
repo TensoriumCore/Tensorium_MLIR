@@ -76,14 +76,11 @@ chmod +x build.sh && ./build.sh
 - [ ] **Runtime integration**  
   Link the MLIR dialect with `Tensorium_lib` to run compiled kernels on real data.
 
----
-
 ## Why this project?
 
 The project aims to build a bridge between **symbolic physics** and **compiler technology**, using MLIR to define a customizable intermediate representation for relativistic computations.  
 It aspires to empower physicists and researchers to write **high-level tensorial expressions**, which are then compiled down to **optimized low-level code** (LLVM IR, GPU kernels, etc.).
 
----
 
 ## License
 
