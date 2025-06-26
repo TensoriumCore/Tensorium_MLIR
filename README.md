@@ -62,6 +62,14 @@ You can now configure Tensorium_MLIR:
 chmod +x build.sh && ./build.sh
 ```
 
+## Use the Clang/LLVM pragma handler 
+
+```bash
+/opt/local/libexec/llvm-20/bin/clang++ -Xclang -load -Xclang ../build/lib/libTensoriumPragmaPlugin.dylib \
+        -Xclang -add-plugin -Xclang tensorium-dispatch \
+        -fsyntax-only CompilerHandler/PragmaTest.cpp
+```
+
 ## Future Ideas
 
 - [ ] **LaTeX/Sympy → MLIR converter**  
