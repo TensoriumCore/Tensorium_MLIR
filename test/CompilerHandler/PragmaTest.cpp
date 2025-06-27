@@ -1,7 +1,10 @@
-#pragma tensorium target(avx2)
+#pragma tensorium target(cpu)
+void foo() {}
 
-#ifdef TENSORIUM_TARGET_avx2
-int main() { return 42; }
-#else
-int main() { return 0; }
-#endif
+void bar() {}
+
+int main() { 
+#pragma tensorium target(cpu)
+	bar();
+	return 0; 
+}
