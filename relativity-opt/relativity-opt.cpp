@@ -16,12 +16,13 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "Relativity/RelativityDialect.h"
+#include "../lib/Relativity/RelativityLoweringPass.h"
 #include "Relativity/RelativityOpsDialect.cpp.inc"
-
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
-  // TODO: Register relativity passes here.
-
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+		  return createLowerRelativityPass();
+		  });
   mlir::DialectRegistry registry;
   registry.insert<mlir::relativity::RelativityDialect>();
   registry.insert<mlir::func::FuncDialect>();
@@ -33,5 +34,5 @@ int main(int argc, char **argv) {
   registry.insert<mlir::func::FuncDialect>();
 
   return mlir::asMainReturnCode(
-      mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
+		  mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
 }

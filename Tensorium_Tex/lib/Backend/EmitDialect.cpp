@@ -26,7 +26,6 @@ namespace Tensorium {
 		fout << " -> f64\n";
 		return var;
 	}
-
 	void generate_lowered_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts) {
 		for (const auto& root : all_asts) {
 			std::vector<std::shared_ptr<tensorium::ASTNode>> terms;
@@ -121,6 +120,10 @@ namespace Tensorium {
             fout_symbolic << ") -> f64 {\n";
             std::string result_var = Tensorium::emit_metric_component_mlir(func_name, args, indices, formula, fout_symbolic, 2);
             fout_symbolic << "  return " << result_var << " : f64\n}\n\n";
+			std::cout << "[Tensorium] Generated MLIR function: " << func_name
+							          << " with indices (" << i1 << ", " << i2 << ") and formula: "
+			          << formula << "\n";
+
         }
     }
     fout_symbolic.close();
