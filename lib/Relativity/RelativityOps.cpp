@@ -7,6 +7,7 @@ using namespace mlir;
 using namespace mlir::relativity;
 
 LogicalResult CreateConformalMetricOp::verify() {
+  llvm::errs() << "VERIFICATION CALLED!\n";
   auto type = getGammaIj().getType();
   auto tensorType = llvm::dyn_cast<RankedTensorType>(type);
   if (!tensorType || tensorType.getRank() != 2) {
@@ -15,6 +16,7 @@ LogicalResult CreateConformalMetricOp::verify() {
   if (tensorType.getShape() != ArrayRef<int64_t>({3, 3})) {
     return emitOpError("gamma_ij must have shape 3x3");
   }
+  llvm::errs() << "VERIFICATION PASSED!\n";
   return success();
 }
 

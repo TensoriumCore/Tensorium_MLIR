@@ -24,7 +24,6 @@ def Relativity_FooOp : Relativity_Op<"foo", [Pure,
     }];
 }
 
-
 def AddOp : Relativity_Op<"add", [Pure]> {
   let summary = "Addition";
   let description = [{
@@ -57,4 +56,31 @@ def CreateConformalMetricOp : Relativity_Op<"create_conformal_metric", [Pure]> {
 	  $gamma_ij `,` $chi `:` type($gamma_ij) `,` type($chi) `->` type($conformal_gamma_ij) attr-dict
   }];
 }
+
+def MetricComponentOp : Relativity_Op<"metric_component", [Pure]> {
+  let summary = "A symbolic metric tensor component";
+  let description = [{
+    Symbolic operation representing a metric component, e.g., g_tt, g_rr, etc.
+  }];
+  let arguments = (ins Variadic<F64>:$vars);
+  let results = (outs F64:$res);
+
+  let assemblyFormat = [{
+	  $vars attr-dict `:` type($vars) `->` type($res)
+  }];
+
+}
+
+def MetricTensorOp : Relativity_Op<"metric_tensor", [Pure]> {
+  let summary = "Assembles the full metric tensor from its components";
+  let description = [{
+    Constructs the full metric tensor $g_{ij}$ by assembling its individual components.
+  }];
+  let arguments = (ins Variadic<F64>:$components);
+  let results = (outs TensorOf<[F64]>:$tensor);
+  let assemblyFormat = [{
+    $components attr-dict `:` type($components) `->` type($tensor)
+  }];
+}
+
 #endif // RELATIVITY_OPS
