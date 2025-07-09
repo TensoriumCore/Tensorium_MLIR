@@ -84,7 +84,7 @@ class TensoriumConsumer : public ASTConsumer {
 			SourceManager &SM = Ctx.getSourceManager();
 
 			std::string exportDir = "tensorium_export";
-			struct stat st = {0};
+			struct stat st {};
 			if (stat(exportDir.c_str(), &st) == -1) {
 				mkdir(exportDir.c_str(), 0755);
 			}
