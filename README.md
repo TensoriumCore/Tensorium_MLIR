@@ -1,17 +1,21 @@
 # Tensorium_MLIR
 
-**A symbolic-to-MLIR codegen tool for numerical relativity.**
-This project parses LaTeX expressions of spacetime metrics and automatically generates C++ or MLIR code for initial data in numerical relativity.
+A symbolic-to-MLIR codegen tool for numerical relativity.
+This project parses LaTeX expressions of spacetime metrics with a custom C++ parser and automatically generates C++ or MLIR code for initial data in numerical relativity.
 
-## The Latex Parser is in [Tensorium_Tex/](Tensorium_Tex/), you just have to install nix and run nix-shell in the main directory
+## Why this project?
 
-```bash
-python3 Codegen.py --backend mlir/cpp && make 
-```
-(Type make only if you want all the ```.o``` for tests in a C++ main)
+The project aims to build a bridge between **symbolic physics** and **compiler technology**, using MLIR to define a customizable intermediate representation for relativistic computations.  
+It aspires to empower physicists and researchers to write **high-level tensorial expressions**, which are then compiled down to **optimized low-level code** (LLVM IR, GPU kernels, etc.).
+
 
 ## Status
-This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
+This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity. The current options are :
+
+- Custom LaTex parser
+- Custom high level MLIR Dialect from LaTeX to create relativistic tensor patterns
+- Emit lower passes MLIR (affine,Linealg/tensor/memref) from metric Tex files
+- Can print Custom AST from the parser
 
 ## Goals
 
@@ -58,36 +62,43 @@ source ~/.zshrc
 ```
 You can now configure Tensorium_MLIR:
 
+## Usage
+
+To convert LaTeX metric blocks into MLIR or C++ code, simply provide your .tex input to the frontend tool.
+The system will extract and simplify metric components, then emit either "lowered" MLIR, or dialect MLIR for the Tensorium/Relativity dialects.
+Status
+
+This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
+
+### build
+
 ```bash
-chmod +x build.sh && ./build.sh
+mkdir build && cd build && cmake .. && make -j
 ```
 
-## Use the Clang/LLVM pragma handler 
+### exemple 
 
-```bash
-/opt/local/libexec/llvm-20/bin/clang++ -Xclang -load -Xclang ../build/lib/libTensoriumPragmaPlugin.dylib \
-        -Xclang -add-plugin -Xclang tensorium-dispatch \
-        -fsyntax-only CompilerHandler/PragmaTest.cpp
+create a ```test.tex``` file with:
+
+```markdown
+$-(1 - \frac{2 M r}{\rho^2}) dt^2$
+$- \frac{4 M a r \sin^2\theta}{\rho^2} dt d\phi$
+$\frac{\rho^2}{\Delta} dr^2$
+$\rho^2 d\theta^2$
+$(r^2 + a^2 + \frac{2 M a^2 r \sin^2\theta}{\rho^2}) \sin^2\theta d\phi^2$
 ```
 
-## Future Ideas
+then use ```tensorium-tex``` to parse and convert into a high level MLIR dialect with ```--dialect``` or lowered to low level MLIR with ```--mlir```:
 
-- [ ] **LaTeX/Sympy → MLIR converter**  
-  A symbolic parser (maybe a custom symbolic language like Kadath's one) will be developed in `frontend/`.
+```bash
+./tensorium-tex --dialect/mlir test.tex 
+```
 
-- [ ] **Automatic generation of geometric objects**  
-  Generate Jacobians, Christoffel symbols, Ricci and Riemann tensors using dedicated MLIR operations and optimization passes.
+then you can pass it to relativity-opt :
 
-- [ ] **GPU code generation**  
-  Target GPU/CPU/TPU architectures to accelerate large-scale simulations.
-
-- [ ] **Runtime integration**  
-  Link the MLIR dialect with `Tensorium_lib` to run compiled kernels on real data.
-
-## Why this project?
-
-The project aims to build a bridge between **symbolic physics** and **compiler technology**, using MLIR to define a customizable intermediate representation for relativistic computations.  
-It aspires to empower physicists and researchers to write **high-level tensorial expressions**, which are then compiled down to **optimized low-level code** (LLVM IR, GPU kernels, etc.).
+```bash
+./relativity-opt output_symbolic.mlir
+```
 
 
 ## License
