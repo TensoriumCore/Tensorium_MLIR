@@ -39,4 +39,22 @@ def AddOp : Relativity_Op<"add", [Pure]> {
   }];
 }
 
+def CreateConformalMetricOp : Relativity_Op<"create_conformal_metric", [Pure]> {
+  let summary = "Compute conformal 3-metric γ̃_ij = χ * γ_ij";
+  let description = [{
+    This operation scales the physical 3-metric γ_ij by the conformal factor χ
+    to compute the conformal 3-metric γ̃_ij.
+  }];
+
+  let hasVerifier = 1;
+  let hasCustomAssemblyFormat = 1;
+  let builders = [
+	  OpBuilder<(ins "Value":$gamma_ij, "Value":$chi)>
+  ];
+  let arguments = (ins TensorOf<[F64]>:$gamma_ij, F64:$chi);
+  let results = (outs TensorOf<[F64]>:$conformal_gamma_ij);
+  let assemblyFormat = [{
+	  $gamma_ij `,` $chi `:` type($gamma_ij) `,` type($chi) `->` type($conformal_gamma_ij) attr-dict
+  }];
+}
 #endif // RELATIVITY_OPS

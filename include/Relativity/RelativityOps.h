@@ -1,3 +1,4 @@
+
 #ifndef RELATIVITY_RELATIVITYOPS_H
 #define RELATIVITY_RELATIVITYOPS_H
 
@@ -7,7 +8,16 @@
 #include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
+namespace mlir {
+namespace relativity {
+
+class CreateConformalMetricOp;
+
+} // namespace relativity
+} // namespace mlir
+
 #define GET_OP_CLASSES
 #include "Relativity/RelativityOps.h.inc"
 
 #endif // RELATIVITY_RELATIVITYOPS_H
+
