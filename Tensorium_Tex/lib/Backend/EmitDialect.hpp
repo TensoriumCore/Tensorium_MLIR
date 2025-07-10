@@ -9,7 +9,7 @@
 #include <set>
 #include <map>
 namespace Tensorium {
-void generate_dialect_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts);
+void generate_metric_tensor_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts);
 void generate_lowered_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts);
 std::string emit_metric_component_mlir(
 			const std::string& funcName,

@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     if (mode == "--mlir")
         Tensorium::generate_lowered_mlir(all_asts);
     else if (mode == "--dialect")
-        Tensorium::generate_dialect_mlir(all_asts);
+        Tensorium::generate_metric_tensor_mlir(all_asts);
     else {
         std::cerr << "Unknown mode: " << mode << "\n";
         return 2;

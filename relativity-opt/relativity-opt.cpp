@@ -17,22 +17,37 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "Relativity/RelativityDialect.h"
 #include "../lib/Relativity/RelativityLoweringPass.h"
+#include "../lib/Relativity/AssembleMetricTensorPass.h"
 #include "Relativity/RelativityOpsDialect.cpp.inc"
-int main(int argc, char **argv) {
-  mlir::registerAllPasses();
-  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		  return createLowerRelativityPass();
-		  });
-  mlir::DialectRegistry registry;
-  registry.insert<mlir::relativity::RelativityDialect>();
-  registry.insert<mlir::func::FuncDialect>();
-  registry.insert<mlir::arith::ArithDialect>();
-  registry.insert<mlir::math::MathDialect>();
-  registry.insert<mlir::tensor::TensorDialect>();
-  registry.insert<mlir::linalg::LinalgDialect>();
-  registry.insert<mlir::memref::MemRefDialect>();
-  registry.insert<mlir::func::FuncDialect>();
+#include "../lib/Relativity/RelativitySimplifyPass.h"
+#include "mlir/InitAllDialects.h"
+#include "mlir/InitAllPasses.h"
 
-  return mlir::asMainReturnCode(
-		  mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
+int main(int argc, char **argv) {
+
+	llvm::InitLLVM y(argc, argv);
+	mlir::registerAllPasses();
+	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+			return createLowerRelativityPass();
+			});
+	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+			return mlir::relativity::createAssembleMetricTensorPass();
+			});
+	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+			return mlir::relativity::createRelativitySimplifyPass();
+			});
+
+	mlir::DialectRegistry registry;
+	mlir::registerAllDialects(registry);
+	registry.insert<mlir::relativity::RelativityDialect>();
+	registry.insert<mlir::func::FuncDialect>();
+	registry.insert<mlir::arith::ArithDialect>();
+	registry.insert<mlir::math::MathDialect>();
+	registry.insert<mlir::tensor::TensorDialect>();
+	registry.insert<mlir::linalg::LinalgDialect>();
+	registry.insert<mlir::memref::MemRefDialect>();
+	registry.insert<mlir::func::FuncDialect>();
+
+	return mlir::asMainReturnCode(
+			mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
 }

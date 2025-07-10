@@ -5,8 +5,11 @@ set(LIBS
         ${conversion_libs}
         MLIROptLib
         MLIRRelativity
-        )
-add_llvm_executable(relativity-opt relativity-opt.cpp)
+		MLIRTensorDialect
+		MLIRFuncDialect
+		MLIRArithDialect
+	)
+	add_llvm_executable(relativity-opt relativity-opt.cpp)
 
-llvm_update_compile_flags(relativity-opt)
-target_link_libraries(relativity-opt PRIVATE ${LIBS})
+	llvm_update_compile_flags(relativity-opt)
+	target_link_libraries(relativity-opt PRIVATE ${LIBS})
