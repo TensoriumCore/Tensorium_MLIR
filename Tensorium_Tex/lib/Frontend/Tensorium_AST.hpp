@@ -23,6 +23,7 @@ enum class ASTNodeType {
   IndexedExpr,
   Decorator, 
 };
+
 inline const char *to_string(ASTNodeType t) {
   switch (t) {
   case ASTNodeType::Number:
@@ -131,3 +132,6 @@ private:
 };
 
 } // namespace tensorium
+namespace tensorium {
+  std::vector<Token> tokenize(const std::string &input);
+}

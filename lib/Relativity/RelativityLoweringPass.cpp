@@ -9,28 +9,113 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "llvm/Support/Casting.h" 
+#include "../../Tensorium_Tex/lib/Frontend/Tensorium_AST.hpp"
+#include "../../Tensorium_Tex/lib/Frontend/Tensorium_Tex.hpp"
 #include <memory>
+#include "mlir/IR/Attributes.h"  
+#include "llvm/Support/Casting.h" 
+#include "mlir/Dialect/Math/IR/Math.h"
 
 using namespace mlir;
+
+using namespace mlir;
+using namespace tensorium; // ou ton namespace d'AST, si défini
+
+namespace tensorium {
+
+std::vector<Token> tokenize(const std::string &input) {
+    Lexer lexer(input);
+    return lexer.tokenize();
+}
+
+}
+Value resolveSymbol(const std::string &name, const SmallVector<Value> &inputs) {
+    if (name == "M") return inputs[0];
+    if (name == "Delta") return inputs[1];
+    if (name == "rho") return inputs[2];
+    if (name == "sin") return inputs[3];
+    if (name == "theta") return inputs[4];
+    if (name == "a") return inputs[5];
+    if (name == "r") return inputs[6];
+    llvm_unreachable(("Unknown symbol: " + name).c_str());
+}
+
+
+mlir::Value emitFormula(tensorium::ASTNode *node,
+                        mlir::PatternRewriter &rewriter,
+                        mlir::Location loc,
+                        mlir::ValueRange inputs) {
+  using namespace mlir;
+
+  if (!node)
+    return nullptr;
+
+  switch (node->type) {
+    case tensorium::ASTNodeType::Number: {
+      double val = std::stod(node->value);
+      return rewriter.create<arith::ConstantOp>(
+          loc, rewriter.getF64FloatAttr(val));
+    }
+
+    case tensorium::ASTNodeType::TensorSymbol:
+    case tensorium::ASTNodeType::Symbol: {
+      return resolveSymbol(node->value, inputs); // À toi de l’implémenter
+    }
+
+    case tensorium::ASTNodeType::BinaryOp: {
+      assert(node->children.size() == 2 && "BinaryOp must have two children");
+      Value lhs = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+      Value rhs = emitFormula(node->children[1].get(), rewriter, loc, inputs);
+
+      if (node->value == "+")
+        return rewriter.create<arith::AddFOp>(loc, lhs, rhs);
+      else if (node->value == "-")
+        return rewriter.create<arith::SubFOp>(loc, lhs, rhs);
+      else if (node->value == "*")
+        return rewriter.create<arith::MulFOp>(loc, lhs, rhs);
+      else if (node->value == "/")
+        return rewriter.create<arith::DivFOp>(loc, lhs, rhs);
+      else if (node->value == "^")
+        return rewriter.create<math::PowFOp>(loc, lhs, rhs);
+      else
+		  llvm::report_fatal_error(llvm::Twine("Unknown binary operator: ") + node->value);
+    }
+
+    case tensorium::ASTNodeType::UnaryOp: {
+      assert(node->children.size() == 1 && "UnaryOp must have one child");
+      Value child = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+
+      if (node->value == "-")
+        return rewriter.create<arith::NegFOp>(loc, child);
+      else
+		  llvm::report_fatal_error(llvm::Twine("Unknown unary operator: ") + node->value);
+    }
+
+    default:
+      llvm::report_fatal_error("Unsupported ASTNodeType in emitFormula");
+  }
+}
+
 struct MetricComponentLowering
-: public OpRewritePattern<relativity::MetricComponentOp> {
-	using OpRewritePattern::OpRewritePattern;
+    : public OpRewritePattern<relativity::MetricComponentOp> {
+    using OpRewritePattern::OpRewritePattern;
 
-	LogicalResult matchAndRewrite(relativity::MetricComponentOp op,
-			PatternRewriter &rewriter) const override {
-		Location loc = op.getLoc();
-		auto operands = op.getOperands();
-		Type resultTy = op.getResult().getType();
+    LogicalResult matchAndRewrite(relativity::MetricComponentOp op,
+                                  PatternRewriter &rewriter) const override {
+        Location loc = op.getLoc();
+        ValueRange inputs = op.getOperands();
 
-		auto call = rewriter.create<func::CallOp>(loc,
-				"metric_component_impl",
-				resultTy,
-				operands);
-		rewriter.replaceOp(op, call.getResult(0));
-		return success();
-	}
+		auto attr = llvm::cast<StringAttr>(op->getAttr("formula"));
+		std::string formulaStr = attr.getValue().str();
+		auto tokens = tensorium::tokenize(formulaStr);
+        tensorium::Parser parser(tokens);
+        std::shared_ptr<tensorium::ASTNode> ast = parser.parse_expression();
+        Value lowered = emitFormula(ast.get(), rewriter, loc, inputs);
+        rewriter.replaceOp(op, lowered);
+
+        return success();
+    }
 };
-
 
 struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp> {
 	using OpRewritePattern::OpRewritePattern;
