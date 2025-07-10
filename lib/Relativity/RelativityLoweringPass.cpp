@@ -59,7 +59,7 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
 
     case tensorium::ASTNodeType::TensorSymbol:
     case tensorium::ASTNodeType::Symbol: {
-      return resolveSymbol(node->value, inputs); // À toi de l’implémenter
+      return resolveSymbol(node->value, inputs); 
     }
 
     case tensorium::ASTNodeType::BinaryOp: {
