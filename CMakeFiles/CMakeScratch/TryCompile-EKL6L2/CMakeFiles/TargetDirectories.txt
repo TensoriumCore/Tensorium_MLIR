@@ -1,3 +1,0 @@
-/Users/at0m741/Desktop/Tensorium_MLIR/CMakeFiles/CMakeScratch/TryCompile-EKL6L2/CMakeFiles/cmTC_a8684.dir
-/Users/at0m741/Desktop/Tensorium_MLIR/CMakeFiles/CMakeScratch/TryCompile-EKL6L2/CMakeFiles/edit_cache.dir
-/Users/at0m741/Desktop/Tensorium_MLIR/CMakeFiles/CMakeScratch/TryCompile-EKL6L2/CMakeFiles/rebuild_cache.dir
