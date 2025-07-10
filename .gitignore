@@ -2,6 +2,7 @@
 *.egg-info/
 build/
 dist/
+CMakeFiles/
 __pycache__/
 
 # CMake / ninja / cmake-build
