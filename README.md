@@ -8,7 +8,6 @@ This project parses LaTeX expressions of spacetime metrics with a custom C++ par
 The project aims to build a bridge between **symbolic physics** and **compiler technology**, using MLIR to define a customizable intermediate representation for relativistic computations.  
 It aspires to empower physicists and researchers to write **high-level tensorial expressions**, which are then compiled down to **optimized low-level code** (LLVM IR, GPU kernels, etc.).
 
-
 ## Status
 This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity. The current options are :
 
@@ -99,8 +98,6 @@ then you can pass it to relativity-opt :
 ```bash
 ./relativity-opt output_symbolic.mlir
 ```
-
-
 ## License
 
 MIT — see [LICENSE](./LICENSE)
