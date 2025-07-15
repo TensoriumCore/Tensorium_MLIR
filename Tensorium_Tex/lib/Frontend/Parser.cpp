@@ -216,8 +216,8 @@ Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {
 
         std::shared_ptr<ASTNode> rhs;
 
-        if (implicit) {
-			auto prim = parse_primary();                  // χ
+      if (implicit) {
+  			auto prim = parse_primary();                  // χ
 			if (!eof() && peek().type == TokenType::pow)  // χ ^ ...
 				rhs = parse_binary_rhs(30, prim);         // traite d’abord la puissance
 			else
@@ -304,7 +304,6 @@ std::shared_ptr<ASTNode> Parser::parse_tensor_symbol() {
         append_split_indices(indices, idxTok.value, var);
     }
   }
-
   return std::make_shared<TensorSymbolNode>(name, indices,
                                             decorator.value_or(""));
 }
@@ -369,20 +368,17 @@ std::string token_type_name(TokenType type) {
     return "???";
   }
 }
+
 std::shared_ptr<ASTNode> Parser::attach_indices(std::shared_ptr<ASTNode> base) {
     std::vector<Index> indices;
-
     while (!eof() && peek().type == TokenType::end)
         get();
-
     while (!eof()) {
         TokenType t = peek().type;
 
         if (t == TokenType::end) { get(); continue; }
-
         if (t != TokenType::covariant && t != TokenType::contravariant)
             break;
-
         IndexVariance var = (t == TokenType::covariant)
                                 ? IndexVariance::Covariant
                                 : IndexVariance::Contravariant;
@@ -407,11 +403,9 @@ std::shared_ptr<ASTNode> Parser::attach_indices(std::shared_ptr<ASTNode> base) {
 
     if (indices.empty())
         return base;
-
     if (auto ts = std::dynamic_pointer_cast<TensorSymbolNode>(base)) {
         ts->indices.insert(ts->indices.end(), indices.begin(), indices.end());
         return ts;
     }
-
     return std::make_shared<IndexedExpressionNode>(base, indices);
 }
