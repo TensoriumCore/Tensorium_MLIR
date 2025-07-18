@@ -8,6 +8,7 @@
 #include "../lib/Frontend/Tensorium_Tex.hpp"
 #include "../lib/Utils/MetricExtract.hpp"
 #include "../lib/Backend/EmitDialect.hpp"
+#include "../lib/Frontend/Tensorim_simplify.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]) {
     }
     std::string input;
     std::getline(file, input, '\0');
-
+	for (char &c : input) 
+		std::cout << c;
     std::vector<std::string> blocks = extract_math_blocks(input);
     for (auto &math : blocks) {
         math.erase(std::remove(math.begin(), math.end(), '&'), math.end());
@@ -56,26 +58,40 @@ int main(int argc, char *argv[]) {
             math = math.substr(start, finish - start + 1);
     }
 
-    std::vector<std::shared_ptr<tensorium::ASTNode>> all_asts;
-    for (const auto &math : blocks) {
-        Lexer lexer(math);
-        std::vector<Token> tokens = lexer.tokenize();
-        Parser parser(tokens);
-        auto asts = parser.parse_statements();
-        FlattenMul fm;
-        for (auto &r : asts)
-            r = fm.run(r);
-        for (const auto &root : asts)
-            all_asts.push_back(root);
-    }
 
-    if (mode == "--mlir")
-        Tensorium::generate_lowered_mlir(all_asts);
-    else if (mode == "--dialect")
-        Tensorium::generate_metric_tensor_mlir(all_asts);
-    else {
-        std::cerr << "Unknown mode: " << mode << "\n";
-        return 2;
-    }
-    return 0;
+	std::vector<std::shared_ptr<tensorium::ASTNode>> all_asts;
+	for (const auto &math : blocks) {
+		Lexer lexer(math);
+		std::vector<Token> tokens = lexer.tokenize();
+		std::cerr << "=== DUMP des tokens pour la formule: `" << math << "` ===\n";
+		for (auto &t : tokens) {
+			std::cerr << token_type_name(t.type) << " : `" << t.value << "`\n";
+		}
+		std::cerr << "========================================\n";
+		Parser parser(tokens);
+		auto asts = parser.parse_statements();
+		FlattenMul fm;
+		
+		for (auto &root : asts) {
+			// aplatir les * & +
+			root = fm.run(root);
+			// puis associer trigonométrie
+			associate_trig_functions(root);
+			// enfin, print & simple‑string…
+			print_ast(root);
+			std::cout << "Simplified: " << ast_to_simple_string(root) << "\n";
+			all_asts.push_back(root);
+		}
+	}
+
+
+	if (mode == "--mlir")
+		Tensorium::generate_lowered_mlir(all_asts);
+	else if (mode == "--dialect")
+		Tensorium::generate_metric_tensor_mlir(all_asts);
+	else {
+		std::cerr << "Unknown mode: " << mode << "\n";
+		return 2;
+	}
+	return 0;
 }

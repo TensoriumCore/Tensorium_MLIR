@@ -6,7 +6,7 @@
 
 namespace FormulaParser {
 
-enum class NodeType { Number, Symbol, BinaryOp, UnaryOp };
+enum class NodeType { Number, Symbol, BinaryOp, UnaryOp, FunctionCall, TensorSymbol };
 
 struct ASTNode {
     NodeType type;

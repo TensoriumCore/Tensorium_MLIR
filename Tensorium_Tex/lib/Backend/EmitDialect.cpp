@@ -63,86 +63,86 @@ namespace Tensorium {
 	}
 
 void generate_metric_tensor_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts) {
-	std::ofstream fout_symbolic("output_symbolic.mlir", std::ios::trunc);
+    std::ofstream fout_symbolic("output_symbolic.mlir", std::ios::trunc);
 
-	std::map<std::pair<std::string, std::string>, tensorium::Node> fusion;
-	std::set<std::string> all_symbols;
+    std::map<std::pair<std::string, std::string>, tensorium::Node> fusion;
+    std::set<std::string> all_symbols;
 
-	for (const auto& root : all_asts) {
-		std::vector<std::shared_ptr<tensorium::ASTNode>> terms;
-		flatten_sum(root, terms);
-		if (terms.empty()) terms.push_back(root);
+    for (const auto& root : all_asts) {
+        std::vector<std::shared_ptr<tensorium::ASTNode>> terms;
+        flatten_sum(root, terms);
+        if (terms.empty()) terms.push_back(root);
 
-		std::vector<tensorium::MetricComponent> all_components;
-		for (const auto& term : terms) {
-			auto comps = tensorium::extract_metric_terms(term);
-			for (const auto& c : comps)
-				if (c.is_metric_component)
-					all_components.push_back(c);
-		}
-		for (const auto& c : all_components) {
-			std::string i1 = c.indices.first, i2 = c.indices.second;
-			if (i1 > i2) std::swap(i1, i2);
-			auto key = std::make_pair(i1, i2);
-			if (fusion.count(key)) {
-				fusion[key] = std::make_shared<tensorium::ASTNode>(
-						tensorium::ASTNodeType::BinaryOp, "+", std::vector<tensorium::Node>{fusion[key], c.factor});
-			} else {
-				fusion[key] = c.factor;
-			}
-		}
-	}
+        std::vector<tensorium::MetricComponent> all_components;
+        for (const auto& term : terms) {
+            auto comps = tensorium::extract_metric_terms(term);
+            for (const auto& c : comps)
+                if (c.is_metric_component)
+                    all_components.push_back(c);
+        }
+        for (const auto& c : all_components) {
+            std::string i1 = c.indices.first, i2 = c.indices.second;
+            if (i1 > i2) std::swap(i1, i2);
+            auto key = std::make_pair(i1, i2);
+            if (fusion.count(key)) {
+                fusion[key] = std::make_shared<tensorium::ASTNode>(
+                        tensorium::ASTNodeType::BinaryOp, "+", std::vector<tensorium::Node>{fusion[key], c.factor});
+            } else {
+                fusion[key] = c.factor;
+            }
+        }
+    }
 
-	for (const auto& kv : fusion) {
-		Tensorium::collect_symbols(kv.second, all_symbols);
-	}
+    for (const auto& kv : fusion)
+        Tensorium::collect_symbols(kv.second, all_symbols);
 
-	std::vector<std::string> args;
-	for (const auto& sym : all_symbols)
-		args.push_back("%" + Tensorium::to_ssa_name(sym));
+    // Paramètres autorisés et dans l'ordre voulu
+    std::vector<std::string> param_names = {"M", "a", "theta", "phi", "r"};
+    std::vector<std::string> args;
+    for (const auto& pname : param_names)
+        args.push_back("%" + Tensorium::to_ssa_name(pname));
 
-	fout_symbolic << "func.func @metric_tensor(";
-	for (size_t i = 0; i < args.size(); ++i) {
-		if (i != 0) fout_symbolic << ", ";
-		fout_symbolic << args[i] << ": f64";
-	}
-	fout_symbolic << ") -> tensor<4x4xf64> {\n";
+    fout_symbolic << "func.func @metric_tensor(";
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (i != 0) fout_symbolic << ", ";
+        fout_symbolic << args[i] << ": f64";
+    }
+    fout_symbolic << ") -> tensor<4x4xf64> {\n";
 
-	std::vector<std::string> ssa_vars;
-	for (const auto& kv : fusion) {
-		std::string i1 = kv.first.first, i2 = kv.first.second;
-		std::string var = fresh_var();
+    std::vector<std::string> ssa_vars;
+    for (const auto& kv : fusion) {
+        std::string i1 = kv.first.first, i2 = kv.first.second;
+        std::string var = fresh_var();
 
-		std::string indices = "\"" + i1 + "\", \"" + i2 + "\"";
-		std::ostringstream oss;
-		pretty_print_factor(kv.second, oss);
-		std::string formula = oss.str();
-		formula.erase(std::remove(formula.begin(), formula.end(), '\\'), formula.end());
+        std::string indices = "\"" + i1 + "\", \"" + i2 + "\"";
+        std::ostringstream oss;
+        pretty_print_factor(kv.second, oss);
+        std::string formula = oss.str();
+        formula.erase(std::remove(formula.begin(), formula.end(), '\\'), formula.end());
 
-		fout_symbolic << "  " << var << " = relativity.metric_component";
-		for (const auto& a : args) fout_symbolic << " " << a << ",";
-		if (!args.empty()) fout_symbolic.seekp(-1, std::ios_base::cur);
-		fout_symbolic << " {indices = [" << indices << "], formula = \"" << formula << "\"}";
-		fout_symbolic << " : ";
-		for (size_t i = 0; i < args.size(); ++i) fout_symbolic << "f64, ";
-		if (!args.empty()) fout_symbolic.seekp(-2, std::ios_base::cur);
-		fout_symbolic << " -> f64\n";
-		ssa_vars.push_back(var);
-	}
+        fout_symbolic << "  " << var << " = relativity.metric_component";
+        for (const auto& a : args) fout_symbolic << " " << a << ",";
+        if (!args.empty()) fout_symbolic.seekp(-1, std::ios_base::cur);
+        fout_symbolic << " {indices = [" << indices << "], formula = \"" << formula << "\"}";
+        fout_symbolic << " : ";
+        for (size_t i = 0; i < args.size(); ++i) fout_symbolic << "f64, ";
+        if (!args.empty()) fout_symbolic.seekp(-2, std::ios_base::cur);
+        fout_symbolic << " -> f64\n";
+        ssa_vars.push_back(var);
+    }
 
-	fout_symbolic << "  %tensor = relativity.metric_tensor";
-	for (const auto& var : ssa_vars)
-		fout_symbolic << " " << var << ",";
-	if (!ssa_vars.empty()) fout_symbolic.seekp(-1, std::ios_base::cur);
-	fout_symbolic << " : ";
-	for (size_t i = 0; i < ssa_vars.size(); ++i)
-		fout_symbolic << "f64, ";
-	if (!ssa_vars.empty()) fout_symbolic.seekp(-2, std::ios_base::cur);
-	fout_symbolic << " -> tensor<4x4xf64>\n";
+    fout_symbolic << "  %tensor = relativity.metric_tensor";
+    for (const auto& var : ssa_vars)
+        fout_symbolic << " " << var << ",";
+    if (!ssa_vars.empty()) fout_symbolic.seekp(-1, std::ios_base::cur);
+    fout_symbolic << " : ";
+    for (size_t i = 0; i < ssa_vars.size(); ++i)
+        fout_symbolic << "f64, ";
+    if (!ssa_vars.empty()) fout_symbolic.seekp(-2, std::ios_base::cur);
+    fout_symbolic << " -> tensor<4x4xf64>\n";
 
-	// CORRECTION : On return %tensor (et plus %undef)
-	fout_symbolic << "  return %tensor : tensor<4x4xf64>\n";
-	fout_symbolic << "}\n";
-	fout_symbolic.close();
+    fout_symbolic << "  return %tensor : tensor<4x4xf64>\n";
+    fout_symbolic << "}\n";
+    fout_symbolic.close();
 }
 } // namespace Tensorium

@@ -58,264 +58,249 @@ std::vector<std::shared_ptr<ASTNode>> Parser::parse_statements() {
   return statements;
 }
 
+
+
 std::shared_ptr<ASTNode> Parser::parse_primary() {
     Token tok = peek();
 
     if (tok.type == TokenType::plus || tok.type == TokenType::minus) {
-        get(); 
+        get();
         auto operand = parse_primary();
         if (!operand) return nullptr;
-
         auto node = std::make_shared<ASTNode>(ASTNodeType::UnaryOp, tok.value);
         node->children.push_back(operand);
-        return attach_indices(node); 
+        return attach_indices(node);
     }
 
     if (tok.type == TokenType::lpar) {
-        get();                    
+        get();
         auto expr = parse_expression();
-        if (peek().type == TokenType::rpar) get(); 
+        if (peek().type == TokenType::rpar) get();
         else std::cerr << "Error: expected ')'\n";
-		return attach_indices(expr);
-	}
-	if (tok.type == TokenType::lbrace) {
-		get();  
-		auto expr = parse_expression();
-		if (peek().type == TokenType::rbrace)
-			get(); 
-		else
-			std::cerr << "Error: expected '}'\n";
-		return attach_indices(expr); 
-	}
-	if (tok.type == TokenType::symbol && tok.value == "\\frac") {
-		get();
-		if (peek().type != TokenType::lbrace) {
-			std::cerr << "Error: expected '{' after \\frac\n";
-			return nullptr;
-		}
-		get(); 
+        return attach_indices(expr);
+    }
 
-		auto num = parse_expression();
-		if (peek().type == TokenType::rbrace) get();
-		else std::cerr << "Error: expected '}' after numerator\n";
+    if (tok.type == TokenType::lbrace) {
+        get();
+        auto expr = parse_expression();
+        if (peek().type == TokenType::rbrace) get();
+        else std::cerr << "Error: expected '}'\n";
+        return attach_indices(expr);
+    }
 
-		if (peek().type != TokenType::lbrace) {
-			std::cerr << "Error: expected '{' before denominator\n";
-			return nullptr;
-		}
-		get(); 
+    if (tok.type == TokenType::symbol && tok.value == "\\frac") {
+        get();
+        if (peek().type != TokenType::lbrace) {
+            std::cerr << "Error: expected '{' after \\frac\n";
+            return nullptr;
+        }
+        get();
+        auto num = parse_expression();
+        if (peek().type == TokenType::rbrace) get();
+        else std::cerr << "Error: expected '}' after numerator\n";
+        while (peek().type == TokenType::rbrace) get();
 
-		auto den = parse_expression();
-		if (peek().type == TokenType::rbrace) get();
-		else std::cerr << "Error: expected '}' after denominator\n";
+        if (peek().type != TokenType::lbrace) {
+            std::cerr << "Error: expected '{' before denominator\n";
+            return nullptr;
+        }
+        get();
+        auto den = parse_expression();
+        if (peek().type == TokenType::rbrace) get();
+        else std::cerr << "Error: expected '}' after denominator\n";
+        while (peek().type == TokenType::rbrace) get();
 
-		auto frac = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "/");
-		frac->children = {num, den};
+        auto frac = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "/");
+        frac->children = {num, den};
         return attach_indices(frac);
     }
 
-    if (tok.type == TokenType::partial) {
+	if (tok.type == TokenType::decorator || tok.type == TokenType::symbol) {
+		return attach_indices(parse_tensor_symbol());
+	}
+
+	if (tok.type == TokenType::partial) {
+		get();
+		std::shared_ptr<ASTNode> powNode = nullptr, idxNode = nullptr;
+		if (peek().type == TokenType::contravariant) {
+			get();
+			Token p = get();
+			powNode = std::make_shared<ASTNode>(
+					p.type == TokenType::integer ? ASTNodeType::Number : ASTNodeType::Symbol,
+					p.value
+					);
+		}
+		if (peek().type == TokenType::covariant) {
+			get();
+			Token i = get();
+			idxNode = std::make_shared<ASTNode>(ASTNodeType::Symbol, i.value);
+		}
+		auto operand = parse_primary();
+		auto deriv = std::make_shared<ASTNode>(ASTNodeType::Derivative, "\\partial");
+		if (powNode) deriv->children.push_back(powNode);
+		if (idxNode) deriv->children.push_back(idxNode);
+		if (operand) deriv->children.push_back(operand);
+		return attach_indices(deriv);
+	}
+
+	if (tok.type == TokenType::integral) {
+		get();
+		auto integrand = parse_expression();
+		return attach_indices(std::make_shared<ASTNode>(
+					ASTNodeType::Integral, "\\int",
+					std::vector{integrand}
+					));
+	}
+
+	if (tok.type == TokenType::decorator || tok.type == TokenType::symbol) {
+		return attach_indices(parse_tensor_symbol());
+	}
+
+	if (tok.type == TokenType::integer || tok.type == TokenType::real) {
+		get();
+		return attach_indices(std::make_shared<ASTNode>(
+					ASTNodeType::Number, tok.value
+					));
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<ASTNode> Parser::parse_primary_with_power() {
+    auto node = parse_primary();
+    if (!node) return nullptr;
+
+    while (!eof() && peek().type == TokenType::pow) {
         get();
-        std::shared_ptr<ASTNode> powNode = nullptr, idxNode = nullptr;
-
-        if (peek().type == TokenType::contravariant) {
-            get();
-            Token pow = get();
-            powNode = std::make_shared<ASTNode>(
-                pow.type == TokenType::integer ? ASTNodeType::Number
-                                               : ASTNodeType::Symbol,
-                pow.value);
-        }
-        if (peek().type == TokenType::covariant) { 
-            get();
-            Token idx = get();
-            idxNode = std::make_shared<ASTNode>(ASTNodeType::Symbol, idx.value);
-        }
-
-        auto operand = parse_primary();
-        auto deriv = std::make_shared<ASTNode>(ASTNodeType::Derivative, "\\partial");
-        if (powNode) deriv->children.push_back(powNode);
-        if (idxNode) deriv->children.push_back(idxNode);
-        if (operand) deriv->children.push_back(operand);
-
-        return attach_indices(deriv);
+        auto exponent = parse_primary();
+        if (!exponent) break;
+        node = std::make_shared<ASTNode>(
+            ASTNodeType::BinaryOp,
+            "^",
+            std::vector<std::shared_ptr<ASTNode>>{node, exponent}
+        );
     }
 
-    if (tok.type == TokenType::integral) {
-        get();
-        auto integrand = parse_expression();
-        return attach_indices(
-            std::make_shared<ASTNode>(ASTNodeType::Integral, "\\int",
-                                      std::vector{integrand}));
-    }
-
-    if (tok.type == TokenType::decorator || tok.type == TokenType::symbol) {
-        return attach_indices(parse_tensor_symbol());
-    }
-
-    auto make_base_node = [&](Token t) -> std::shared_ptr<ASTNode> {
-        if (t.type == TokenType::symbol) return parse_tensor_symbol();
-        get();                                          // consomme nombre
-        return std::make_shared<ASTNode>(ASTNodeType::Number, t.value);
-    };
-
-    if (tok.type == TokenType::symbol ||
-        tok.type == TokenType::integer ||
-        tok.type == TokenType::real) {
-
-        auto base = make_base_node(tok);
-
-        if (peek().type == TokenType::contravariant) {
-            get(); 
-
-            std::shared_ptr<ASTNode> exponent = nullptr;
-            if (peek().type == TokenType::lbrace) {
-                get();
-                exponent = parse_expression();
-                if (peek().type == TokenType::rbrace) get();
-                else std::cerr << "Error: expected '}' after exponent\n";
-            } else {  
-                Token eTok = get();
-                if (eTok.type == TokenType::integer || eTok.type == TokenType::symbol) {
-                    exponent = std::make_shared<ASTNode>(
-                        eTok.type == TokenType::symbol ? ASTNodeType::Symbol
-                                                       : ASTNodeType::Number,
-                        eTok.value);
-                } else {
-                    std::cerr << "Error: bad exponent after '^'\n";
-                    return attach_indices(base);
-                }
-            }
-
-            auto power = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "^");
-            power->children = {base, exponent};
-            return attach_indices(power); 
-        }
-
-        return attach_indices(base);
-    }
-
-    return nullptr;
+    return node;
 }
 
 std::shared_ptr<ASTNode>
 Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {
-    while (!eof()) {
-        TokenType t      = peek().type;
-        int       tokPrec = get_precedence(t);
-        bool      implicit = false;
+	while (!eof()) {
+		TokenType t      = peek().type;
+		int       tokPrec = get_precedence(t);
+		bool      implicit = false;
 
-        /* produit implicite : 20 */
-        if (tokPrec < 0 && is_primary_start(t)) {
-            tokPrec  = 20;
-            implicit = true;
-        }
+		if (tokPrec < 0 && is_primary_start(t)) {
+			tokPrec  = 20;
+			implicit = true;
+		}
 
-        if (tokPrec < prec)
-            return lhs;
+		if (tokPrec < prec)
+			return lhs;
 
-        std::shared_ptr<ASTNode> rhs;
+		std::shared_ptr<ASTNode> rhs;
 
-        if (implicit) {
-			auto prim = parse_primary();                  // χ
-			if (!eof() && peek().type == TokenType::pow)  // χ ^ ...
-				rhs = parse_binary_rhs(30, prim);         // traite d’abord la puissance
+		if (implicit) {
+			auto prim = parse_primary_with_power(); 
+			if (!eof() && peek().type == TokenType::pow)
+				rhs = parse_binary_rhs(30, prim); 
 			else
 				rhs = prim;
-        } else {
-            Token opTok = get(); 
-            rhs = parse_primary();
-            if (!rhs) return nullptr;
+		} else {
+			Token opTok = get(); 
+			rhs = parse_primary_with_power();
+			if (!rhs) return nullptr;
 
-            if (opTok.type == TokenType::pow &&
-                get_precedence(peek().type) >= tokPrec) { 
-                rhs = parse_binary_rhs(tokPrec, rhs);
-                if (!rhs) return nullptr;
-            }
+			if (opTok.type == TokenType::pow &&
+					get_precedence(peek().type) >= tokPrec) { 
+				rhs = parse_binary_rhs(tokPrec, rhs);
+				if (!rhs) return nullptr;
+			}
 
-            auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp,
-                                                 opTok.value);
-            bin->children = {lhs, rhs};
-            lhs = bin;
-            continue;
-        }
+			auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp,
+					opTok.value);
+			bin->children = {lhs, rhs};
+			lhs = bin;
+			continue;
+		}
 
-        auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "*");
-        bin->children = {lhs, rhs};
-        lhs = bin;
-    }
-    return lhs;
+		auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "*");
+		bin->children = {lhs, rhs};
+		lhs = bin;
+	}
+	return lhs;
 }
 
 void append_split_indices(std::vector<Index> &list, const std::string &raw,
-                          IndexVariance var) {
-  if (raw.size() > 1 && raw.rfind('\\', 0) != 0) {
-    for (char c : raw)
-      list.emplace_back(std::string(1, c), var);
-  } else {
-    list.emplace_back(raw, var);
-  }
+		IndexVariance var) {
+	if (raw.size() > 1 && raw.rfind('\\', 0) != 0) {
+		for (char c : raw)
+			list.emplace_back(std::string(1, c), var);
+	} else {
+		list.emplace_back(raw, var);
+	}
 }
 
 std::shared_ptr<ASTNode> Parser::parse_tensor_symbol() {
-  Token firstTok = get();
-  std::string name;
-  std::optional<std::string> decorator;
-  std::vector<Index> indices;
+	Token firstTok = get();
+	std::string name;
+	std::optional<std::string> decorator;
+	std::vector<Index> indices;
 
-  if (firstTok.type == TokenType::decorator) {
-    decorator = firstTok.value;
-    if (peek().type != TokenType::lbrace)
-      return std::make_shared<ASTNode>(ASTNodeType::Symbol, "?");
-    get();
-    Token inner = get();
-    if (inner.type != TokenType::symbol)
-      return std::make_shared<ASTNode>(ASTNodeType::Symbol, "?");
-    name = inner.value;
-    if (peek().type == TokenType::rbrace)
-      get();
-  } else {
-    name = firstTok.value;
-  }
+	if (firstTok.type == TokenType::decorator) {
+		decorator = firstTok.value;
+		if (peek().type != TokenType::lbrace)
+			return std::make_shared<ASTNode>(ASTNodeType::Symbol, "?");
+		get();
+		Token inner = get();
+		if (inner.type != TokenType::symbol)
+			return std::make_shared<ASTNode>(ASTNodeType::Symbol, "?");
+		name = inner.value;
+		if (peek().type == TokenType::rbrace)
+			get();
+	} else {
+		name = firstTok.value;
+	}
 
-  while (!eof()) {
-    TokenType t = peek().type;
-    if (t != TokenType::covariant && t != TokenType::contravariant)
-      break;
+	while (!eof()) {
+		TokenType t = peek().type;
+		if (t != TokenType::covariant && t != TokenType::contravariant)
+			break;
 
-    IndexVariance var = (t == TokenType::covariant)
-                            ? IndexVariance::Covariant
-                            : IndexVariance::Contravariant;
-    get();
+		IndexVariance var = (t == TokenType::covariant)
+			? IndexVariance::Covariant
+			: IndexVariance::Contravariant;
+		get();
 
-    if (peek().type == TokenType::lbrace) {
-      get();
-      while (!eof() && peek().type != TokenType::rbrace) {
-        Token idxTok = get();
-        if (idxTok.type == TokenType::symbol ||
-            idxTok.type == TokenType::integer)
-          append_split_indices(indices, idxTok.value, var);
-      }
-      if (peek().type == TokenType::rbrace)
-        get();
-    } else {
-      Token idxTok = get();
-      if (idxTok.type == TokenType::symbol || idxTok.type == TokenType::integer)
-        append_split_indices(indices, idxTok.value, var);
-    }
-  }
+		if (peek().type == TokenType::lbrace) {
+			get();
+			while (!eof() && peek().type != TokenType::rbrace) {
+				Token idxTok = get();
+				if (idxTok.type == TokenType::symbol ||
+						idxTok.type == TokenType::integer)
+					append_split_indices(indices, idxTok.value, var);
+			}
+			if (peek().type == TokenType::rbrace)
+				get();
+		} else {
+			Token idxTok = get();
+			if (idxTok.type == TokenType::symbol || idxTok.type == TokenType::integer)
+				append_split_indices(indices, idxTok.value, var);
+		}
+	}
 
-  return std::make_shared<TensorSymbolNode>(name, indices,
-                                            decorator.value_or(""));
+	return std::make_shared<TensorSymbolNode>(name, indices,
+			decorator.value_or(""));
 }
 
 std::string token_type_name(TokenType type) {
-  switch (type) {
-  case TokenType::plus:
-    return "plus";
-  case TokenType::bar:
-    return "bar";
-  case TokenType::minus:
+	switch (type) {
+		case TokenType::plus:
+			return "plus";
+		case TokenType::bar:
+			return "bar";
+		case TokenType::minus:
     return "minus";
   case TokenType::tilde:
     return "tilde";

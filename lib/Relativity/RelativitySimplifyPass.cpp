@@ -3,50 +3,63 @@
 #include "Relativity/RelativityOps.h"
 #include "Relativity/RelativityDialect.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Support/LogicalResult.h"
-#include "Utils/FormulaParser.h"
-
+#include "mlir/IR/BuiltinAttributes.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/raw_ostream.h"
 #include <regex>
 #include <string>
+#include <algorithm>
 
-// Adapt to your real namespace if needed!
-namespace mlir {
-namespace relativity {
+using namespace mlir;
+
+namespace {
 
 struct RelativitySimplifyPass
-	: public PassWrapper<RelativitySimplifyPass, OperationPass<mlir::ModuleOp>>
-{
-	void runOnOperation() override {
-		auto module = getOperation();
-		module.walk([&](Operation *op) {
-			if (auto metric = llvm::dyn_cast_or_null<relativity::MetricComponentOp>(op)) {
-				auto origFormulaAttr = metric->getAttrOfType<StringAttr>("formula");
-				if (!origFormulaAttr) return;
+    : public PassWrapper<RelativitySimplifyPass, OperationPass<ModuleOp>> {
+  void runOnOperation() override {
+    ModuleOp module = getOperation();
 
-				std::string origFormula = origFormulaAttr.str();
-				std::string newFormula = FormulaParser::simplify_formula(origFormula);
+    static const std::regex fracRe(R"(\\?frac\{([^\}]*)\}\{([^\}]*)\})");
+    static const std::regex fracSimpleRe(R"(\\?frac([a-zA-Z0-9^_]+)([a-zA-Z0-9^_]+))");
+    static const std::regex expRe(R"(\^\{?([^\}]+)\}?)");
 
-				if (newFormula != origFormula) {
-					op->setAttr("formula", StringAttr::get(op->getContext(), newFormula));
-					llvm::errs() << "[RelativitySimplifyPass] Simplified: '" << origFormula << "' -> '" << newFormula << "'\n";
-				} else if (newFormula.find("frac") != std::string::npos || newFormula.find('^') != std::string::npos) {
-					llvm::errs() << "[RelativitySimplifyPass][WARN] Unparsed formula: " << newFormula << "\n";
-				}
-			}
-		});
-	}
+    module.walk([&](Operation *op) {
+      if (auto metric = dyn_cast<relativity::MetricComponentOp>(op)) {
+        if (auto attr = metric->getAttrOfType<StringAttr>("formula")) {
+          std::string f = attr.getValue().str();
 
-	StringRef getArgument() const final { return "relativity-simplify"; }
-	StringRef getDescription() const final { return "Simplifies Relativity metric formulas"; }
-	MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RelativitySimplifyPass)
+          llvm::errs() << "[DEBUG] before: " << f << "\n";
+          f = std::regex_replace(f, fracRe, "($1)/($2)");
+          f = std::regex_replace(f, fracSimpleRe, "($1)/($2)");
+          llvm::errs() << "[DEBUG] after frac: " << f << "\n";
+          f = std::regex_replace(f, expRe, "^$1");
+          f.erase(std::remove(f.begin(), f.end(), '{'), f.end());
+          f.erase(std::remove(f.begin(), f.end(), '}'), f.end());
+
+          if (f != attr.getValue().str()) {
+            op->setAttr("formula",
+                        StringAttr::get(op->getContext(), f));
+            llvm::errs() << "[RelativitySimplifyPass] Simplified formula to: " << f << "\n";
+          }
+        }
+      }
+    });
+  }
+
+  StringRef getArgument() const final { return "relativity-simplify"; }
+  StringRef getDescription() const final {
+    return "Cleans up LaTeX fractions, exponents, and curly braces in metric formulas";
+  }
 };
+} // end anonymous namespace
 
-std::unique_ptr<mlir::Pass> createRelativitySimplifyPass() {
-	return std::make_unique<RelativitySimplifyPass>();
+namespace mlir {
+namespace relativity {
+  
+std::unique_ptr<Pass> createRelativitySimplifyPass() {
+  return std::make_unique<RelativitySimplifyPass>();
 }
 
 } // namespace relativity
 } // namespace mlir
-

@@ -99,6 +99,7 @@ private:
   size_t pos;
 
   std::shared_ptr<ASTNode> parse_primary();
+  std::shared_ptr<ASTNode> parse_primary_with_power();
   std::shared_ptr<ASTNode> parse_binary_rhs(int prec,
                                             std::shared_ptr<ASTNode> lhs);
   std::shared_ptr<ASTNode> parse_tensor_symbol();
