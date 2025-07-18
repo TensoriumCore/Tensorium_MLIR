@@ -5,9 +5,7 @@ file(GLOB_RECURSE TEX_SRC
     "lib/Utils/*.cpp"
     "srcs/*.cpp"
 )
-
 add_executable(tensorium-tex ${TEX_SRC})
-
 target_include_directories(tensorium-tex PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/Frontend
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/Backend
