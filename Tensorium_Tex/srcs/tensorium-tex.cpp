@@ -73,11 +73,8 @@ int main(int argc, char *argv[]) {
 		FlattenMul fm;
 		
 		for (auto &root : asts) {
-			// aplatir les * & +
 			root = fm.run(root);
-			// puis associer trigonométrie
 			associate_trig_functions(root);
-			// enfin, print & simple‑string…
 			print_ast(root);
 			std::cout << "Simplified: " << ast_to_simple_string(root) << "\n";
 			all_asts.push_back(root);

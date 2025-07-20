@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include "Tensorium_AST.hpp"
+#include "Tensorium_Tensor_Index.hpp"
 
 namespace tensorium {
 

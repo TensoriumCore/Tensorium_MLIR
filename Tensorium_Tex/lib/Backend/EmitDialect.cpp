@@ -1,4 +1,5 @@
 #include "EmitDialect.hpp"
+#include "../Frontend/Tensorim_simplify.hpp"
 namespace tensorium {
     using Node = std::shared_ptr<ASTNode>;
 }
@@ -26,6 +27,7 @@ namespace Tensorium {
 		fout << " -> f64\n";
 		return var;
 	}
+
 	void generate_lowered_mlir(const std::vector<std::shared_ptr<tensorium::ASTNode>>& all_asts) {
 		for (const auto& root : all_asts) {
 			std::vector<std::shared_ptr<tensorium::ASTNode>> terms;
@@ -96,7 +98,6 @@ void generate_metric_tensor_mlir(const std::vector<std::shared_ptr<tensorium::AS
     for (const auto& kv : fusion)
         Tensorium::collect_symbols(kv.second, all_symbols);
 
-    // Paramètres autorisés et dans l'ordre voulu
     std::vector<std::string> param_names = {"M", "a", "theta", "phi", "r"};
     std::vector<std::string> args;
     for (const auto& pname : param_names)
@@ -116,8 +117,7 @@ void generate_metric_tensor_mlir(const std::vector<std::shared_ptr<tensorium::AS
 
         std::string indices = "\"" + i1 + "\", \"" + i2 + "\"";
         std::ostringstream oss;
-        pretty_print_factor(kv.second, oss);
-        std::string formula = oss.str();
+        std::string formula = ast_to_simple_string(kv.second); 
         formula.erase(std::remove(formula.begin(), formula.end(), '\\'), formula.end());
 
         fout_symbolic << "  " << var << " = relativity.metric_component";

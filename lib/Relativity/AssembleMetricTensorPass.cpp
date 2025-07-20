@@ -9,7 +9,6 @@
 
 namespace mlir {
 namespace relativity {
-
 	struct AssembleMetricTensorPass
 		: public PassWrapper<AssembleMetricTensorPass, OperationPass<mlir::ModuleOp>> {
 

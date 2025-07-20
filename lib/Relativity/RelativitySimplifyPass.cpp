@@ -29,10 +29,8 @@ struct RelativitySimplifyPass
         if (auto attr = metric->getAttrOfType<StringAttr>("formula")) {
           std::string f = attr.getValue().str();
 
-          llvm::errs() << "[DEBUG] before: " << f << "\n";
           f = std::regex_replace(f, fracRe, "($1)/($2)");
           f = std::regex_replace(f, fracSimpleRe, "($1)/($2)");
-          llvm::errs() << "[DEBUG] after frac: " << f << "\n";
           f = std::regex_replace(f, expRe, "^$1");
           f.erase(std::remove(f.begin(), f.end(), '{'), f.end());
           f.erase(std::remove(f.begin(), f.end(), '}'), f.end());

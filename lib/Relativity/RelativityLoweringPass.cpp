@@ -63,23 +63,30 @@ Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter, ml
         return rewriter.create<arith::AddFOp>(loc, diff, a2);
     }
 
+	if (name == "sin" || name == "cos" || name == "tan") {
+		llvm::errs() << "[WARNING] Function " << name << " called as symbol. Patching as 0.0\n";
+		return rewriter.create<arith::ConstantOp>(loc, rewriter.getF64FloatAttr(0.0));
+	}
     llvm::errs() << "Unknown symbol in resolveSymbol: " << name << "\n";
     llvm_unreachable("Unhandled symbol in resolveSymbol");
 }
 
 using FormulaParser::NodeType;
-mlir::Value emitFormula(FormulaParser::ASTNode *node,
+
+mlir::Value emitFormula(tensorium::ASTNode *node,
                         mlir::PatternRewriter &rewriter,
                         mlir::Location loc,
-                        mlir::ValueRange inputs) {
+                        mlir::ValueRange inputs)  {
   if (!node) return nullptr;
 
+  using NT = tensorium::ASTNodeType;
+
   switch (node->type) {
-  case NodeType::Number: {
+  case NT::Number: {
     double v = std::stod(node->value);
     return rewriter.create<arith::ConstantOp>(loc, rewriter.getF64FloatAttr(v));
   }
-  case NodeType::BinaryOp: {
+  case NT::BinaryOp: {
     mlir::Value lhs = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     mlir::Value rhs = emitFormula(node->children[1].get(), rewriter, loc, inputs);
     if (node->value == "+") return rewriter.create<arith::AddFOp>(loc, lhs, rhs);
@@ -89,32 +96,28 @@ mlir::Value emitFormula(FormulaParser::ASTNode *node,
     if (node->value == "^") return rewriter.create<math::PowFOp>(loc, lhs, rhs);
     llvm::report_fatal_error("Unsupported binary op");
   }
-  
-case NodeType::Symbol:
-case NodeType::TensorSymbol:
+  case NT::Symbol:
+  case NT::TensorSymbol:
     if (node->value == "^" || node->value == "{" || node->value == "}") {
         llvm::errs() << "ERREUR: Symbol token inattendu dans resolveSymbol: " << node->value << "\n";
         llvm::report_fatal_error("AST mal formé : opérateur traité comme symbole");
     }
     return resolveSymbol(node->value, rewriter, loc, llvm::to_vector<6>(inputs));
-
-  case NodeType::FunctionCall: {
+  case NT::FunctionCall: {
     mlir::Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     if (node->value == "sin") return rewriter.create<math::SinOp>(loc, arg);
     if (node->value == "cos") return rewriter.create<math::CosOp>(loc, arg);
     if (node->value == "tan") return rewriter.create<math::TanOp>(loc, arg);
     llvm::report_fatal_error("Unsupported function");
   }
-
-
-
-  case NodeType::UnaryOp: {
+  case NT::UnaryOp: {
     mlir::Value s = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     if (node->value == "-") return rewriter.create<arith::NegFOp>(loc, s);
     llvm::report_fatal_error("Unsupported unary op");
   }
+  default:
+    llvm_unreachable("Unknown node type");
   }
-  llvm_unreachable("Unknown node type");
 }
 
 struct MetricComponentLowering
@@ -126,50 +129,58 @@ struct MetricComponentLowering
         Location loc = op.getLoc();
         ValueRange inputs = op.getOperands();
 
-		auto attr = llvm::cast<StringAttr>(op->getAttr("formula"));
-		std::string formulaStr = attr.getValue().str();
-		auto tokens = FormulaParser::tokenize(formulaStr);
-		for (auto &tok : tokens)
-			llvm::errs() << "tok: " << tok << "\n";
-		std::shared_ptr<FormulaParser::ASTNode> ast = FormulaParser::parse(tokens);
-        Value lowered = emitFormula(ast.get(), rewriter, loc, inputs);
-        rewriter.replaceOp(op, lowered);
+		auto attr = op->getAttrOfType<StringAttr>("formula");
+		std::string str = attr.getValue().str();
+		auto tokens = tensorium::tokenize(str);
+		tensorium::Parser parser(tokens);
+		auto stmts = parser.parse_statements();
+		if (stmts.empty())
+			return rewriter.notifyMatchFailure(op, "could not parse formula");
+		auto ast = stmts.front();
+		Value lowered = emitFormula(ast.get(), rewriter, loc, inputs);
+		rewriter.replaceOp(op, lowered);
+		return success();    }
+	};
 
-		llvm::errs() << "AST = " << FormulaParser::ast_to_string(ast) << "\n";
+
+struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp> {
+    using OpRewritePattern::OpRewritePattern;
+
+    LogicalResult matchAndRewrite(relativity::MetricTensorOp op,
+                                 PatternRewriter &rewriter) const override {
+        Location loc = op.getLoc();
+        auto rawTy = op.getResult().getType();
+        auto rankedTy = llvm::dyn_cast<mlir::RankedTensorType>(rawTy);
+        assert(rankedTy && "expected RankedTensorType");
+        Type elemTy = rankedTy.getElementType();
+
+        ValueRange in = op.getOperands();
+
+        SmallVector<Value, 5> args;
+        for (unsigned i = 0; i < 5; ++i) {
+            if (i < in.size())
+                args.push_back(in[i]);
+            else
+                args.push_back(rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy)));
+        }
+
+        Value g00 = args[0], g11 = args[1], g22 = args[2], g03 = args[3], g33 = args[4];
+        Value g30 = g03; 
+
+        Value zero = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy));
+        SmallVector<Value, 16> elems = {
+            g00,  zero, zero, g03,
+            zero, g11,  zero, zero,
+            zero, zero, g22,  zero,
+            g30,  zero, zero, g33
+        };
+
+        auto fromElem = rewriter.create<tensor::FromElementsOp>(loc, rankedTy, elems);
+        rewriter.replaceOp(op, fromElem.getResult());
         return success();
     }
 };
 
-struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp> {
-	using OpRewritePattern::OpRewritePattern;
-
-	LogicalResult matchAndRewrite(relativity::MetricTensorOp op,
-			PatternRewriter &rewriter) const override {
-		Location loc = op.getLoc();
-		auto rawTy = op.getResult().getType();
-		auto rankedTy = llvm::dyn_cast<mlir::RankedTensorType>(rawTy);
-		assert(rankedTy && "expected RankedTensorType");
-		Type elemTy = rankedTy.getElementType();
-
-		ValueRange in = op.getOperands();
-		Value g00 = in[0], g11 = in[1], g22 = in[2], g03 = in[3], g33 = in[4];
-		Value g30 = g03;
-
-		Value zero = rewriter.create<arith::ConstantOp>(
-				loc, rewriter.getZeroAttr(elemTy));
-		SmallVector<Value, 16> elems = {
-			g00,  zero, zero, g03,
-			zero, g11,  zero, zero,
-			zero, zero, g22,  zero,
-			g30,  zero, zero, g33
-		};
-
-		auto fromElem = rewriter.create<tensor::FromElementsOp>(
-				loc, rankedTy, elems);
-		rewriter.replaceOp(op, fromElem.getResult());
-		return success();
-	}
-};
 
 namespace {
 	struct LowerRelativityPass
