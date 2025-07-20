@@ -19,7 +19,8 @@ This is currently a proof of concept. The system extracts metric tensors from sy
 ## Goals
 
 - [x] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
-- [x] Generate metric functions in standard MLIR (still in progress)
+- [x] Generate metric MLIR dialect (still in progress)
+- [ ] Lowerging metric dialect to be compiled
 - [ ] Support symbolic derivation of Christoffel, Ricci, and Riemann tensors
 - [ ] Provide clean initial data for BSSN-based codes
 - [ ] Integrate with Tensorium for runtime execution and benchmarking
