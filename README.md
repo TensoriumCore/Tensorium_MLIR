@@ -19,8 +19,7 @@ This is currently a proof of concept. The system extracts metric tensors from sy
 ## Goals
 
 - [x] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
-- [x] Extract and simplify symbolic tensors using SymPy
-- [x] Generate metric functions in standard MLIR or C++
+- [x] Generate metric functions in standard MLIR (still in progress)
 - [ ] Support symbolic derivation of Christoffel, Ricci, and Riemann tensors
 - [ ] Provide clean initial data for BSSN-based codes
 - [ ] Integrate with Tensorium for runtime execution and benchmarking
