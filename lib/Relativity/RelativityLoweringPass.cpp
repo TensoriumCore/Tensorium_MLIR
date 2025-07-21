@@ -96,13 +96,49 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
     if (node->value == "^") return rewriter.create<math::PowFOp>(loc, lhs, rhs);
     llvm::report_fatal_error("Unsupported binary op");
   }
-  case NT::Symbol:
-  case NT::TensorSymbol:
-    if (node->value == "^" || node->value == "{" || node->value == "}") {
-        llvm::errs() << "ERREUR: Symbol token inattendu dans resolveSymbol: " << node->value << "\n";
-        llvm::report_fatal_error("AST mal formé : opérateur traité comme symbole");
-    }
-    return resolveSymbol(node->value, rewriter, loc, llvm::to_vector<6>(inputs));
+  
+	case NT::Symbol:
+	case NT::TensorSymbol: {
+		std::string v = node->value;
+	    if ((v == "sin" || v == "\\sin") && !node->children.empty()) {
+		    Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+			return rewriter.create<math::SinOp>(loc, arg);
+	    }
+		if ((v == "sin" || v == "\\sin")) {
+			llvm::errs() << "[LOWERING] 'sin' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
+	        return rewriter.create<math::SinOp>(loc, inputs[2]);
+		}
+	    if ((v == "cos" || v == "\\cos") && !node->children.empty()) {
+		    Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+			return rewriter.create<math::CosOp>(loc, arg);
+	    }
+		if ((v == "cos" || v == "\\cos")) {
+			llvm::errs() << "[LOWERING] 'cos' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
+			return rewriter.create<math::CosOp>(loc, inputs[2]);
+	    }
+		if ((v == "tan" || v == "\\tan") && !node->children.empty()) {
+			Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+			return rewriter.create<math::TanOp>(loc, arg);
+	    }
+		if ((v == "tan" || v == "\\tan")) {
+			llvm::errs() << "[LOWERING] 'tan' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
+			return rewriter.create<math::TanOp>(loc, inputs[2]);
+	    }
+		if ((v == "exp" || v == "\\exp") && !node->children.empty()) {
+			Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+        return rewriter.create<math::ExpOp>(loc, arg);
+	    }
+		if ((v == "exp" || v == "\\exp")) {
+			llvm::errs() << "[LOWERING] 'exp' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
+	        return rewriter.create<math::ExpOp>(loc, inputs[2]);
+		}
+	   if (v == "^" || v == "{" || v == "}") {
+			llvm::errs() << "ERREUR: Symbol token inattendu dans resolveSymbol: " << node->value << "\n";
+		    llvm::report_fatal_error("AST mal formé : opérateur traité comme symbole");
+		}
+	    return resolveSymbol(v, rewriter, loc, llvm::to_vector<6>(inputs));
+	}
+
   case NT::FunctionCall: {
     mlir::Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     if (node->value == "sin") return rewriter.create<math::SinOp>(loc, arg);
@@ -164,21 +200,25 @@ struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp
                 args.push_back(rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy)));
         }
 
-        Value g00 = args[0], g11 = args[1], g22 = args[2], g03 = args[3], g33 = args[4];
-        Value g30 = g03; 
 
-        Value zero = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy));
-        SmallVector<Value, 16> elems = {
-            g00,  zero, zero, g03,
-            zero, g11,  zero, zero,
-            zero, zero, g22,  zero,
-            g30,  zero, zero, g33
-        };
+		Value g00 = args[0];
+		Value g11 = args[1]; 
+		Value g22 = args[2];
+		Value g33 = args[4];
 
-        auto fromElem = rewriter.create<tensor::FromElementsOp>(loc, rankedTy, elems);
-        rewriter.replaceOp(op, fromElem.getResult());
-        return success();
-    }
+		Value zero = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy));
+		SmallVector<Value, 16> elems = {
+			g00,  zero, zero, zero,
+			zero, g11,  zero, zero,
+			zero, zero, g22,  zero,
+			zero, zero, zero, g33
+		};
+
+
+		auto fromElem = rewriter.create<tensor::FromElementsOp>(loc, rankedTy, elems);
+		rewriter.replaceOp(op, fromElem.getResult());
+		return success();
+	}
 };
 
 
