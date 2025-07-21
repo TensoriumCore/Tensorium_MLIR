@@ -73,84 +73,106 @@ Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter, ml
 
 using FormulaParser::NodeType;
 
+#include "mlir/IR/Attributes.h"   
+#include "llvm/Support/Casting.h" 
+
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/IR/Attributes.h"
+#include "mlir/Dialect/Math/IR/Math.h"
+#include "llvm/Support/Casting.h"
+#include "Utils/FormulaParser.h"
+
 mlir::Value emitFormula(tensorium::ASTNode *node,
                         mlir::PatternRewriter &rewriter,
                         mlir::Location loc,
-                        mlir::ValueRange inputs)  {
-  if (!node) return nullptr;
+                        mlir::ValueRange inputs) {
+  if (!node)
+    return nullptr;
 
   using NT = tensorium::ASTNodeType;
-
   switch (node->type) {
   case NT::Number: {
     double v = std::stod(node->value);
-    return rewriter.create<arith::ConstantOp>(loc, rewriter.getF64FloatAttr(v));
+    return rewriter.create<arith::ConstantOp>(loc,
+        rewriter.getF64FloatAttr(v));
   }
+
   case NT::BinaryOp: {
+    // Puissance robuste
+    if (node->value == "^") {
+      auto *base = node->children[0].get();
+      auto *exp  = node->children[1].get();
+      mlir::Value lhs = emitFormula(base, rewriter, loc, inputs);
+      mlir::Value rhs = emitFormula(exp,  rewriter, loc, inputs);
+
+      bool hasExpVal = false;
+      double expVal = 0.0;
+      if (auto cstOp = rhs.getDefiningOp<arith::ConstantOp>()) {
+        if (auto fattr = llvm::dyn_cast<FloatAttr>(cstOp.getValue())) {
+          expVal = fattr.getValueAsDouble();
+          hasExpVal = true;
+        }
+      }
+      if (!hasExpVal) {
+        if (auto negOp = rhs.getDefiningOp<arith::NegFOp>()) {
+          auto operand = negOp.getOperand();
+          if (auto innerCst = operand.getDefiningOp<arith::ConstantOp>()) {
+            if (auto fattr = llvm::dyn_cast<FloatAttr>(innerCst.getValue())) {
+              expVal = -fattr.getValueAsDouble();
+              hasExpVal = true;
+            }
+          }
+        }
+      }
+    //   if (hasExpVal && expVal == -1.0) {
+    //     auto one = rewriter.create<arith::ConstantOp>(
+    //         loc, rewriter.getF64FloatAttr(1.0));
+    //     return rewriter.create<arith::DivFOp>(loc, one, lhs);
+    //   }
+      return rewriter.create<math::PowFOp>(loc, lhs, rhs);
+    }
+
     mlir::Value lhs = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     mlir::Value rhs = emitFormula(node->children[1].get(), rewriter, loc, inputs);
     if (node->value == "+") return rewriter.create<arith::AddFOp>(loc, lhs, rhs);
     if (node->value == "-") return rewriter.create<arith::SubFOp>(loc, lhs, rhs);
     if (node->value == "*") return rewriter.create<arith::MulFOp>(loc, lhs, rhs);
     if (node->value == "/") return rewriter.create<arith::DivFOp>(loc, lhs, rhs);
-    if (node->value == "^") return rewriter.create<math::PowFOp>(loc, lhs, rhs);
     llvm::report_fatal_error("Unsupported binary op");
   }
-  
-	case NT::Symbol:
-	case NT::TensorSymbol: {
-		std::string v = node->value;
-	    if ((v == "sin" || v == "\\sin") && !node->children.empty()) {
-		    Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
-			return rewriter.create<math::SinOp>(loc, arg);
-	    }
-		if ((v == "sin" || v == "\\sin")) {
-			llvm::errs() << "[LOWERING] 'sin' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
-	        return rewriter.create<math::SinOp>(loc, inputs[2]);
-		}
-	    if ((v == "cos" || v == "\\cos") && !node->children.empty()) {
-		    Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
-			return rewriter.create<math::CosOp>(loc, arg);
-	    }
-		if ((v == "cos" || v == "\\cos")) {
-			llvm::errs() << "[LOWERING] 'cos' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
-			return rewriter.create<math::CosOp>(loc, inputs[2]);
-	    }
-		if ((v == "tan" || v == "\\tan") && !node->children.empty()) {
-			Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
-			return rewriter.create<math::TanOp>(loc, arg);
-	    }
-		if ((v == "tan" || v == "\\tan")) {
-			llvm::errs() << "[LOWERING] 'tan' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
-			return rewriter.create<math::TanOp>(loc, inputs[2]);
-	    }
-		if ((v == "exp" || v == "\\exp") && !node->children.empty()) {
-			Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
-        return rewriter.create<math::ExpOp>(loc, arg);
-	    }
-		if ((v == "exp" || v == "\\exp")) {
-			llvm::errs() << "[LOWERING] 'exp' symbol found without explicit argument, fallback to inputs[2] (theta)\n";
-	        return rewriter.create<math::ExpOp>(loc, inputs[2]);
-		}
-	   if (v == "^" || v == "{" || v == "}") {
-			llvm::errs() << "ERREUR: Symbol token inattendu dans resolveSymbol: " << node->value << "\n";
-		    llvm::report_fatal_error("AST mal formé : opérateur traité comme symbole");
-		}
-	    return resolveSymbol(v, rewriter, loc, llvm::to_vector<6>(inputs));
-	}
+
+  case NT::Symbol:
+  case NT::TensorSymbol: {
+    auto v = node->value;
+    if ((v == "sin" || v == "\\sin") && !node->children.empty())
+      return rewriter.create<math::SinOp>(
+          loc, emitFormula(node->children[0].get(), rewriter, loc, inputs));
+    if ((v == "cos" || v == "\\cos") && !node->children.empty())
+      return rewriter.create<math::CosOp>(
+          loc, emitFormula(node->children[0].get(), rewriter, loc, inputs));
+    if ((v == "tan" || v == "\\tan") && !node->children.empty())
+      return rewriter.create<math::TanOp>(
+          loc, emitFormula(node->children[0].get(), rewriter, loc, inputs));
+    return resolveSymbol(v, rewriter, loc, llvm::to_vector<6>(inputs));
+  }
 
   case NT::FunctionCall: {
-    mlir::Value arg = emitFormula(node->children[0].get(), rewriter, loc, inputs);
-    if (node->value == "sin") return rewriter.create<math::SinOp>(loc, arg);
-    if (node->value == "cos") return rewriter.create<math::CosOp>(loc, arg);
-    if (node->value == "tan") return rewriter.create<math::TanOp>(loc, arg);
+    mlir::Value a = emitFormula(node->children[0].get(), rewriter, loc, inputs);
+    if (node->value == "sin" || node->value == "\\sin")
+      return rewriter.create<math::SinOp>(loc, a);
+    if (node->value == "cos" || node->value == "\\cos")
+      return rewriter.create<math::CosOp>(loc, a);
+    if (node->value == "tan" || node->value == "\\tan")
+      return rewriter.create<math::TanOp>(loc, a);
     llvm::report_fatal_error("Unsupported function");
   }
+
   case NT::UnaryOp: {
     mlir::Value s = emitFormula(node->children[0].get(), rewriter, loc, inputs);
     if (node->value == "-") return rewriter.create<arith::NegFOp>(loc, s);
     llvm::report_fatal_error("Unsupported unary op");
   }
+
   default:
     llvm_unreachable("Unknown node type");
   }
@@ -200,11 +222,10 @@ struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp
                 args.push_back(rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy)));
         }
 
-
-		Value g00 = args[0];
-		Value g11 = args[1]; 
-		Value g22 = args[2];
-		Value g33 = args[4];
+		Value g00 = args[2]; 
+		Value g11 = args[1];
+		Value g22 = args[3];
+		Value g33 = args[0];
 
 		Value zero = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy));
 		SmallVector<Value, 16> elems = {

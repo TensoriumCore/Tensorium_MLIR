@@ -59,39 +59,51 @@ std::vector<std::shared_ptr<ASTNode>> Parser::parse_statements() {
 }
 
 
-
 std::shared_ptr<ASTNode> Parser::parse_primary() {
     Token tok = peek();
 
-    if (tok.type == TokenType::plus || tok.type == TokenType::minus) {
-        get();
-        auto operand = parse_primary();
-        if (!operand) return nullptr;
-        auto node = std::make_shared<ASTNode>(ASTNodeType::UnaryOp, tok.value);
-        node->children.push_back(operand);
-        return attach_indices(node);
-    }
+	if (tok.type == TokenType::symbol &&
+			pos + 1 < tokens.size() &&
+			tokens[pos+1].type == TokenType::lpar) {
+		Token nameTok = get(); 
+		get(); 
+		auto arg = parse_expression();
+		if (peek().type == TokenType::rpar) get();
+		else std::cerr << "Error: expected ')'\n";
+		auto call = std::make_shared<ASTNode>(ASTNodeType::FunctionCall, nameTok.value);
+		call->children.push_back(arg);
+		return attach_indices(call);
+	}
 
-    if (tok.type == TokenType::lpar) {
-        get();
-        auto expr = parse_expression();
-        if (peek().type == TokenType::rpar) get();
-        else std::cerr << "Error: expected ')'\n";
-        return attach_indices(expr);
-    }
+	if (tok.type == TokenType::plus || tok.type == TokenType::minus) {
+		get();
+		auto operand = parse_primary();
+		if (!operand) return nullptr;
+		auto node = std::make_shared<ASTNode>(ASTNodeType::UnaryOp, tok.value);
+		node->children.push_back(operand);
+		return attach_indices(node);
+	}
 
-    if (tok.type == TokenType::lbrace) {
-        get();
-        auto expr = parse_expression();
-        if (peek().type == TokenType::rbrace) get();
-        else std::cerr << "Error: expected '}'\n";
-        return attach_indices(expr);
-    }
+	if (tok.type == TokenType::lpar) {
+		get();
+		auto expr = parse_expression();
+		if (peek().type == TokenType::rpar) get();
+		else std::cerr << "Error: expected ')'\n";
+		return attach_indices(expr);
+	}
 
-    if (tok.type == TokenType::symbol && tok.value == "\\frac") {
-        get();
-        if (peek().type != TokenType::lbrace) {
-            std::cerr << "Error: expected '{' after \\frac\n";
+	if (tok.type == TokenType::lbrace) {
+		get();
+		auto expr = parse_expression();
+		if (peek().type == TokenType::rbrace) get();
+		else std::cerr << "Error: expected '}'\n";
+		return attach_indices(expr);
+	}
+
+	if (tok.type == TokenType::symbol && tok.value == "\\frac") {
+		get();
+		if (peek().type != TokenType::lbrace) {
+			std::cerr << "Error: expected '{' after \\frac\n";
             return nullptr;
         }
         get();

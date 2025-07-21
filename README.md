@@ -98,6 +98,33 @@ then you can pass it to relativity-opt :
 ```bash
 ./relativity-opt output_symbolic.mlir
 ```
+If you want to lower the custom relativity dialect to LLVM IR, you can use the following command:
+
+```bash
+./bin/relativity-opt \
+  --relativity-simplify \
+  --lower-relativity \
+  --assemble-metric-tensor \
+  output_symbolic.mlir -o out.mlir
+```
+
+```bash
+mlir-opt out.mlir \
+  --convert-tensor-to-linalg \
+  --convert-linalg-to-loops \
+  --one-shot-bufferize="allow-return-allocs,bufferize-function-boundaries" \
+  --finalize-memref-to-llvm \
+  --convert-math-to-llvm \
+  --convert-arith-to-llvm \
+  --convert-scf-to-cf \
+  --convert-cf-to-llvm \
+  --convert-func-to-llvm \
+  --reconcile-unrealized-casts \
+  > lowered.mlir
+
+mlir-translate --mlir-to-llvmir lowered.mlir > lowered.ll
+```
+
 ## License
 
 MIT — see [LICENSE](./LICENSE)
