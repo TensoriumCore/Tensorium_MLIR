@@ -124,7 +124,7 @@ mlir-opt out.mlir \
 
 mlir-translate --mlir-to-llvmir lowered.mlir > lowered.ll
 ```
-
+disclamer: atm the lowering pipeline is working but the metric tensor results are not accurate 
 ## License
 
 MIT — see [LICENSE](./LICENSE)
