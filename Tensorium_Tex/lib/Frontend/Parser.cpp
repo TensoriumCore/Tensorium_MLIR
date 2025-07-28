@@ -75,6 +75,14 @@ std::shared_ptr<ASTNode> Parser::parse_primary() {
 		return attach_indices(call);
 	}
 
+	if (tok.type == TokenType::symbol && 
+			(tok.value == "\\sin" || tok.value == "\\cos" || tok.value == "\\tan")) {
+		Token nameTok = get();
+		auto arg = parse_primary();
+		auto call = std::make_shared<ASTNode>(ASTNodeType::FunctionCall, nameTok.value);
+		if (arg) call->children.push_back(arg);
+		return attach_indices(call);
+	}
 	if (tok.type == TokenType::plus || tok.type == TokenType::minus) {
 		get();
 		auto operand = parse_primary();
@@ -178,14 +186,23 @@ std::shared_ptr<ASTNode> Parser::parse_primary() {
 	return nullptr;
 }
 
+
 std::shared_ptr<ASTNode> Parser::parse_primary_with_power() {
     auto node = parse_primary();
     if (!node) return nullptr;
+
+    if (node->type == ASTNodeType::FunctionCall && node->children.empty()) {
+        if (!eof() && peek().type == TokenType::symbol && peek().value == "\\theta") {
+            auto arg = parse_primary();
+            if (arg) node->children.push_back(arg);
+        }
+    }
 
     while (!eof() && peek().type == TokenType::pow) {
         get();
         auto exponent = parse_primary();
         if (!exponent) break;
+
         node = std::make_shared<ASTNode>(
             ASTNodeType::BinaryOp,
             "^",
@@ -195,6 +212,8 @@ std::shared_ptr<ASTNode> Parser::parse_primary_with_power() {
 
     return node;
 }
+
+
 
 std::shared_ptr<ASTNode>
 Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {

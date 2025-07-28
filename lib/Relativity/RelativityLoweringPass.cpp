@@ -73,14 +73,6 @@ Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter, ml
 
 using FormulaParser::NodeType;
 
-#include "mlir/IR/Attributes.h"   
-#include "llvm/Support/Casting.h" 
-
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/IR/Attributes.h"
-#include "mlir/Dialect/Math/IR/Math.h"
-#include "llvm/Support/Casting.h"
-#include "Utils/FormulaParser.h"
 
 mlir::Value emitFormula(tensorium::ASTNode *node,
                         mlir::PatternRewriter &rewriter,
@@ -98,7 +90,6 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
   }
 
   case NT::BinaryOp: {
-    // Puissance robuste
     if (node->value == "^") {
       auto *base = node->children[0].get();
       auto *exp  = node->children[1].get();
@@ -222,10 +213,10 @@ struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp
                 args.push_back(rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy)));
         }
 
-		Value g00 = args[2]; 
+		Value g00 = args[0]; 
 		Value g11 = args[1];
-		Value g22 = args[3];
-		Value g33 = args[0];
+		Value g22 = args[2];
+		Value g33 = args[3];
 
 		Value zero = rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(elemTy));
 		SmallVector<Value, 16> elems = {
@@ -234,7 +225,6 @@ struct MetricTensorLowering : public OpRewritePattern<relativity::MetricTensorOp
 			zero, zero, g22,  zero,
 			zero, zero, zero, g33
 		};
-
 
 		auto fromElem = rewriter.create<tensor::FromElementsOp>(loc, rankedTy, elems);
 		rewriter.replaceOp(op, fromElem.getResult());
