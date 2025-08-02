@@ -2,4 +2,6 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+
 std::unique_ptr<mlir::Pass> createLowerRelativityPass();

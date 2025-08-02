@@ -240,6 +240,7 @@ namespace {
 			void runOnOperation() override {
 				getContext().getOrLoadDialect<mlir::arith::ArithDialect>();
 				getContext().getOrLoadDialect<mlir::tensor::TensorDialect>();
+				getContext().getOrLoadDialect<mlir::math::MathDialect>();
 				auto module = getOperation();
 				if (!module.lookupSymbol<func::FuncOp>("metric_component_impl")) {
 					OpBuilder b(&getContext());

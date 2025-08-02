@@ -23,6 +23,7 @@
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 
 int main(int argc, char **argv) {
 
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
 
 	mlir::DialectRegistry registry;
 	// mlir::registerAllDialects(registry);
+	registry.insert<mlir::relativity::RelativityDialect>();
 
 	registry.insert<mlir::math::MathDialect>();
 	registry.insert<mlir::arith::ArithDialect>();
@@ -49,6 +51,8 @@ int main(int argc, char **argv) {
 	registry.insert<mlir::memref::MemRefDialect>();
 	registry.insert<mlir::linalg::LinalgDialect>();
 
+
+	registry.insert<mlir::relativity::RelativityDialect>();
 
 	return mlir::asMainReturnCode(
 		mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
