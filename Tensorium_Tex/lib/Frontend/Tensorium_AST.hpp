@@ -103,8 +103,20 @@ private:
   std::shared_ptr<ASTNode> parse_binary_rhs(int prec,
                                             std::shared_ptr<ASTNode> lhs);
   std::shared_ptr<ASTNode> parse_tensor_symbol();
-  Token peek() const { return tokens[pos]; }
-  Token get() { return tokens[pos++]; }
+
+	Token peek() const {
+		if (pos >= tokens.size()) {
+			return Token(TokenType::END, ""); // Token neutre
+		}
+		return tokens[pos];
+	}
+
+	Token get() {
+		if (pos >= tokens.size()) {
+			return Token(TokenType::END, "");
+		}
+		return tokens[pos++];
+	}
   bool eof() const { return pos >= tokens.size(); }
   int get_precedence(TokenType t) const {
     switch (t) {
@@ -116,7 +128,7 @@ private:
     case TokenType::mult:
     case TokenType::divide:
       return 15;
-    case TokenType::pow:
+    case TokenType::POW_OP:
       return 30;
     default:
       return -1;

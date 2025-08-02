@@ -198,7 +198,7 @@ std::shared_ptr<ASTNode> Parser::parse_primary_with_power() {
         }
     }
 
-    while (!eof() && peek().type == TokenType::pow) {
+    while (!eof() && peek().type == TokenType::POW_OP) {
         get();
         auto exponent = parse_primary();
         if (!exponent) break;
@@ -234,7 +234,7 @@ Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {
 
 		if (implicit) {
 			auto prim = parse_primary_with_power(); 
-			if (!eof() && peek().type == TokenType::pow)
+			if (!eof() && peek().type == TokenType::POW_OP)
 				rhs = parse_binary_rhs(30, prim); 
 			else
 				rhs = prim;
@@ -243,7 +243,7 @@ Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {
 			rhs = parse_primary_with_power();
 			if (!rhs) return nullptr;
 
-			if (opTok.type == TokenType::pow &&
+			if (opTok.type == TokenType::POW_OP &&
 					get_precedence(peek().type) >= tokPrec) { 
 				rhs = parse_binary_rhs(tokPrec, rhs);
 				if (!rhs) return nullptr;
@@ -343,8 +343,8 @@ std::string token_type_name(TokenType type) {
     return "equal";
   case TokenType::divide:
     return "div";
-  case TokenType::pow:
-    return "pow";
+  case TokenType::POW_OP:
+    return "POW_OP";
   case TokenType::lpar:
     return "lpar";
   case TokenType::decorator:

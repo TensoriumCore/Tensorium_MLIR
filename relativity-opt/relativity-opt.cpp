@@ -22,11 +22,12 @@
 #include "../lib/Relativity/RelativitySimplifyPass.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 int main(int argc, char **argv) {
 
 	llvm::InitLLVM y(argc, argv);
-	mlir::registerAllPasses();
+	// mlir::registerAllPasses();
 	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
 			return createLowerRelativityPass();
 			});
@@ -38,16 +39,17 @@ int main(int argc, char **argv) {
 			});
 
 	mlir::DialectRegistry registry;
-	mlir::registerAllDialects(registry);
-	registry.insert<mlir::relativity::RelativityDialect>();
-	registry.insert<mlir::func::FuncDialect>();
-	registry.insert<mlir::arith::ArithDialect>();
+	// mlir::registerAllDialects(registry);
+
 	registry.insert<mlir::math::MathDialect>();
-	registry.insert<mlir::tensor::TensorDialect>();
-	registry.insert<mlir::linalg::LinalgDialect>();
-	registry.insert<mlir::memref::MemRefDialect>();
+	registry.insert<mlir::arith::ArithDialect>();
 	registry.insert<mlir::func::FuncDialect>();
+	registry.insert<mlir::tensor::TensorDialect>();
+	registry.insert<mlir::scf::SCFDialect>();
+	registry.insert<mlir::memref::MemRefDialect>();
+	registry.insert<mlir::linalg::LinalgDialect>();
+
 
 	return mlir::asMainReturnCode(
-			mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
+		mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
 }

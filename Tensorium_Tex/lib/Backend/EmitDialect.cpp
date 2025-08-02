@@ -1,5 +1,7 @@
 #include "EmitDialect.hpp"
 #include "../Frontend/Tensorim_simplify.hpp"
+#include <algorithm>
+
 namespace tensorium {
     using Node = std::shared_ptr<ASTNode>;
 }

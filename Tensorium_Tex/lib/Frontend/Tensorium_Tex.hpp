@@ -10,7 +10,7 @@ enum TokenType {
   minus,
   mult,
   divide,
-  pow,
+  POW_OP,
   equal,
   lpar,
   rpar,
@@ -33,7 +33,8 @@ enum TokenType {
   overbar,
   bar,
   decorator,
-  unknown
+  unknown,
+  END
 };
 
 enum class GreekSymbolminus {
@@ -175,7 +176,7 @@ public:
 			  get();
 		  char next = peek(); 
 		  if (std::isdigit(next) || next == '{' || next == '(') {
-			  tokens.emplace_back(TokenType::pow, "^");
+			  tokens.emplace_back(TokenType::POW_OP, "^");
 		  } else {
 			  tokens.emplace_back(TokenType::contravariant, "^");
 		  }
@@ -256,7 +257,7 @@ private:
       {"=", TokenType::equal},          {"\\otimes", TokenType::outer},
       {"\\overline", TokenType::bar},   {"\\overbar", TokenType::bar},
       {"*", TokenType::mult},           {"/", TokenType::divide},
-      {"**", TokenType::pow},           {"(", TokenType::lpar},
+      {"**", TokenType::POW_OP},           {"(", TokenType::lpar},
       {")", TokenType::rpar},           {"{", TokenType::lbrace},
       {"}", TokenType::rbrace},         {"d", TokenType::derivative},
       {"\\end", TokenType::end},        {"\\begin", TokenType::end},
