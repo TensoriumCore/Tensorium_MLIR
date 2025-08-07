@@ -20,8 +20,7 @@ LogicalResult CreateConformalMetricOp::verify() {
   return success();
 }
 
-void CreateConformalMetricOp::build(OpBuilder &builder,
-                                    OperationState &state,
+void CreateConformalMetricOp::build(OpBuilder &builder, OperationState &state,
                                     Value gamma_ij, Value chi) {
   auto tensorType = llvm::cast<RankedTensorType>(gamma_ij.getType());
   state.addOperands({gamma_ij, chi});

@@ -137,7 +137,7 @@ public:
       if (c == 'd') {
         std::string s(1, get());
         if (peek() == '\\') {
-          get(); 
+          get();
           std::string cmd;
           while (!eof() && std::isalpha(peek()))
             cmd += get();
@@ -149,48 +149,35 @@ public:
         tokens.emplace_back(TokenType::symbol, s);
         continue;
       }
-      if (c == 'd') {
-        std::string s(1, get());
-        if (peek() == '\\') {
-          get();
-          std::string cmd;
-          while (!eof() && std::isalpha(peek()))
-            cmd += get();
-          s += "\\" + cmd;
-        }
+      if (std::isalpha(c)) {
+        std::string s;
+        while (!eof() && std::isalnum(peek()))
+          s += get();
         tokens.emplace_back(TokenType::symbol, s);
         continue;
       }
 
-	  if (std::isalpha(c)) {
-		  std::string s;
-		  while (!eof() && std::isalnum(peek()))
-			  s += get();
-		  tokens.emplace_back(TokenType::symbol, s);
-		  continue;
-	  }
+      if (c == '^') {
+        get();
+        while (!eof() && std::isspace(peek()))
+          get();
+        char next = peek();
+        if (std::isdigit(next) || next == '{' || next == '(') {
+          tokens.emplace_back(TokenType::POW_OP, "^");
+        } else {
+          tokens.emplace_back(TokenType::contravariant, "^");
+        }
+        continue;
+      }
 
-	  if (c == '^') {
-		  get(); 
-		  while (!eof() && std::isspace(peek()))
-			  get();
-		  char next = peek(); 
-		  if (std::isdigit(next) || next == '{' || next == '(') {
-			  tokens.emplace_back(TokenType::POW_OP, "^");
-		  } else {
-			  tokens.emplace_back(TokenType::contravariant, "^");
-		  }
-		  continue;
-	  }
+      std::string s(1, get());
+      auto it = SyntaxTable.find(s);
+      tokens.emplace_back(
+          it != SyntaxTable.end() ? it->second : TokenType::unknown, s);
+    }
 
-	  std::string s(1, get());
-	  auto it = SyntaxTable.find(s);
-	  tokens.emplace_back(
-			  it != SyntaxTable.end() ? it->second : TokenType::unknown, s);
-	}
-
-	tokens.emplace_back(TokenType::end, "");
-	return tokens;
+    tokens.emplace_back(TokenType::end, "");
+    return tokens;
   }
 
 private:
@@ -257,7 +244,7 @@ private:
       {"=", TokenType::equal},          {"\\otimes", TokenType::outer},
       {"\\overline", TokenType::bar},   {"\\overbar", TokenType::bar},
       {"*", TokenType::mult},           {"/", TokenType::divide},
-      {"**", TokenType::POW_OP},           {"(", TokenType::lpar},
+      {"**", TokenType::POW_OP},        {"(", TokenType::lpar},
       {")", TokenType::rpar},           {"{", TokenType::lbrace},
       {"}", TokenType::rbrace},         {"d", TokenType::derivative},
       {"\\end", TokenType::end},        {"\\begin", TokenType::end},

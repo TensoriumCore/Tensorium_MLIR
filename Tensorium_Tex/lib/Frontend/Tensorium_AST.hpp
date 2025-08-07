@@ -21,7 +21,7 @@ enum class ASTNodeType {
   Integral,
   TensorSymbol,
   IndexedExpr,
-  Decorator, 
+  Decorator,
 };
 
 inline const char *to_string(ASTNodeType t) {
@@ -47,9 +47,9 @@ inline const char *to_string(ASTNodeType t) {
   case ASTNodeType::TensorSymbol:
     return "TensorSymbol";
   case ASTNodeType::IndexedExpr:
-	return "IndexedExpr";
+    return "IndexedExpr";
   case ASTNodeType::Decorator:
-	return "Decorator";
+    return "Decorator";
   }
 }
 
@@ -103,20 +103,20 @@ private:
   std::shared_ptr<ASTNode> parse_binary_rhs(int prec,
                                             std::shared_ptr<ASTNode> lhs);
   std::shared_ptr<ASTNode> parse_tensor_symbol();
+  std::shared_ptr<ASTNode> parse_braced_expression();
+  Token peek() const {
+    if (pos >= tokens.size()) {
+      return Token(TokenType::END, "");
+    }
+    return tokens[pos];
+  }
 
-	Token peek() const {
-		if (pos >= tokens.size()) {
-			return Token(TokenType::END, ""); // Token neutre
-		}
-		return tokens[pos];
-	}
-
-	Token get() {
-		if (pos >= tokens.size()) {
-			return Token(TokenType::END, "");
-		}
-		return tokens[pos++];
-	}
+  Token get() {
+    if (pos >= tokens.size()) {
+      return Token(TokenType::END, "");
+    }
+    return tokens[pos++];
+  }
   bool eof() const { return pos >= tokens.size(); }
   int get_precedence(TokenType t) const {
     switch (t) {
@@ -146,5 +146,5 @@ private:
 
 } // namespace tensorium
 namespace tensorium {
-  std::vector<Token> tokenize(const std::string &input);
+std::vector<Token> tokenize(const std::string &input);
 }

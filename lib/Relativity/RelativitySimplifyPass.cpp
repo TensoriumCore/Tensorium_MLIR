@@ -1,15 +1,15 @@
 
-#include "mlir/IR/PatternMatch.h"
-#include "Relativity/RelativityOps.h"
 #include "Relativity/RelativityDialect.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/IR/BuiltinOps.h"
+#include "Relativity/RelativityOps.h"
 #include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
+#include <algorithm>
 #include <regex>
 #include <string>
-#include <algorithm>
 
 using namespace mlir;
 
@@ -21,7 +21,8 @@ struct RelativitySimplifyPass
     ModuleOp module = getOperation();
 
     static const std::regex fracRe(R"(\\?frac\{([^\}]*)\}\{([^\}]*)\})");
-    static const std::regex fracSimpleRe(R"(\\?frac([a-zA-Z0-9^_]+)([a-zA-Z0-9^_]+))");
+    static const std::regex fracSimpleRe(
+        R"(\\?frac([a-zA-Z0-9^_]+)([a-zA-Z0-9^_]+))");
     static const std::regex expRe(R"(\^\{?([^\}]+)\}?)");
 
     module.walk([&](Operation *op) {
@@ -36,9 +37,9 @@ struct RelativitySimplifyPass
           f.erase(std::remove(f.begin(), f.end(), '}'), f.end());
 
           if (f != attr.getValue().str()) {
-            op->setAttr("formula",
-                        StringAttr::get(op->getContext(), f));
-            llvm::errs() << "[RelativitySimplifyPass] Simplified formula to: " << f << "\n";
+            op->setAttr("formula", StringAttr::get(op->getContext(), f));
+            llvm::errs() << "[RelativitySimplifyPass] Simplified formula to: "
+                         << f << "\n";
           }
         }
       }
@@ -47,14 +48,15 @@ struct RelativitySimplifyPass
 
   StringRef getArgument() const final { return "relativity-simplify"; }
   StringRef getDescription() const final {
-    return "Cleans up LaTeX fractions, exponents, and curly braces in metric formulas";
+    return "Cleans up LaTeX fractions, exponents, and curly braces in metric "
+           "formulas";
   }
 };
 } // end anonymous namespace
 
 namespace mlir {
 namespace relativity {
-  
+
 std::unique_ptr<Pass> createRelativitySimplifyPass() {
   return std::make_unique<RelativitySimplifyPass>();
 }

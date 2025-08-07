@@ -1,8 +1,7 @@
-
-#include "mlir/Pass/Pass.h"
+#pragma once
+#include "Utils/FormulaParser.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
-#include "Utils/FormulaParser.h"
 
 namespace mlir {
 namespace relativity {
