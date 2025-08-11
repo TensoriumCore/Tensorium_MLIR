@@ -33,6 +33,8 @@ struct ExpandMetricGetPattern
     if (!nameAttr)
       return mlir::failure();
 
+    const auto loc = op.getLoc();
+
     if (nameAttr.getValue() == "minkowski") {
       auto gTy = llvm::dyn_cast<mlir::RankedTensorType>(op.getG().getType());
       if (!gTy || gTy.getRank() != 2 || gTy.getShape()[0] != 4 ||
@@ -45,7 +47,7 @@ struct ExpandMetricGetPattern
            0.0, 0.0, 1.0, 0.0,
            0.0, 0.0, 0.0, 1.0};
       auto dense = mlir::DenseFPElementsAttr::get(gTy, llvm::ArrayRef<double>(vals));
-      auto cst   = rewriter.create<mlir::arith::ConstantOp>(op.getLoc(), gTy, dense);
+      auto cst   = rewriter.create<mlir::arith::ConstantOp>(loc, gTy, dense);
       rewriter.replaceOp(op, cst.getResult());
       return mlir::success();
     }
@@ -66,87 +68,85 @@ struct ExpandMetricGetPattern
       }
     }
 
-    auto f64 = rewriter.getF64Type();
-    auto cstM = rewriter.create<mlir::arith::ConstantFloatOp>(op.getLoc(),
-                                                              llvm::APFloat(Mdef), f64);
+    auto f64  = rewriter.getF64Type();
+    auto cstM = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(Mdef), f64);
 
-    // x = (t,x,y,z)
-    auto i0 = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 0);
-    auto i1 = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 1);
-    auto i2 = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 2);
-    auto i3 = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 3);
+    auto i0 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 0);
+    auto i1 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 1);
+    auto i2 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 2);
+    auto i3 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 3);
 
-    auto t = rewriter.create<mlir::vector::ExtractElementOp>(op.getLoc(), op.getX(), i0);
-    auto x = rewriter.create<mlir::vector::ExtractElementOp>(op.getLoc(), op.getX(), i1);
-    auto y = rewriter.create<mlir::vector::ExtractElementOp>(op.getLoc(), op.getX(), i2);
-    auto z = rewriter.create<mlir::vector::ExtractElementOp>(op.getLoc(), op.getX(), i3);
-    (void)t; 
+    auto t = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i0);
+    auto x = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i1);
+    auto y = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i2);
+    auto z = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i3);
+    (void)t;
 
-    // r = sqrt(x^2+y^2+z^2)
-    auto x2 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), x, x);
-    auto y2 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), y, y);
-    auto z2 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), z, z);
-    auto s1 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), x2, y2);
-    auto s2 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), s1, z2);
-    auto r  = rewriter.create<mlir::math::SqrtOp>(op.getLoc(), s2);
+    auto x2 = rewriter.create<mlir::arith::MulFOp>(loc, x, x);
+    auto y2 = rewriter.create<mlir::arith::MulFOp>(loc, y, y);
+    auto z2 = rewriter.create<mlir::arith::MulFOp>(loc, z, z);
+    auto s1 = rewriter.create<mlir::arith::AddFOp>(loc, x2, y2);
+    auto s2 = rewriter.create<mlir::arith::AddFOp>(loc, s1, z2);
 
-    // H = M / r
-    auto H  = rewriter.create<mlir::arith::DivFOp>(op.getLoc(), cstM, r);
+	// après lecture de M
+	double eps = 1e-15;
+	if (auto dict = op->getAttrOfType<mlir::DictionaryAttr>("params")) {
+		if (auto Ea = llvm::dyn_cast_or_null<mlir::FloatAttr>(dict.get("eps")))
+			eps = Ea.getValueAsDouble();
+	}
+	auto eps2 = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(eps*eps), f64);
+    auto lt   = rewriter.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLT, s2, eps2);
+    auto s2s  = rewriter.create<mlir::arith::SelectOp>(loc, lt, eps2, s2);
+    auto r    = rewriter.create<mlir::math::SqrtOp>(loc, s2s);
 
-    // l_mu = (1, x/r, y/r, z/r)
-    auto one = rewriter.create<mlir::arith::ConstantFloatOp>(op.getLoc(), llvm::APFloat(1.0), f64);
-    auto lx  = rewriter.create<mlir::arith::DivFOp>(op.getLoc(), x, r);
-    auto ly  = rewriter.create<mlir::arith::DivFOp>(op.getLoc(), y, r);
-    auto lz  = rewriter.create<mlir::arith::DivFOp>(op.getLoc(), z, r);
+    auto H  = rewriter.create<mlir::arith::DivFOp>(loc, cstM, r);
 
-    // 2H
-    auto c2   = rewriter.create<mlir::arith::ConstantFloatOp>(op.getLoc(), llvm::APFloat(2.0), f64);
-    auto twoH = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), c2, H);
+    auto one = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(1.0), f64);
+    auto lx  = rewriter.create<mlir::arith::DivFOp>(loc, x, r);
+    auto ly  = rewriter.create<mlir::arith::DivFOp>(loc, y, r);
+    auto lz  = rewriter.create<mlir::arith::DivFOp>(loc, z, r);
 
-    // g00 = -1 + 2H
-    auto minus1 = rewriter.create<mlir::arith::ConstantFloatOp>(op.getLoc(), llvm::APFloat(-1.0), f64);
-    auto g00 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), minus1, twoH);
+    auto c2   = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(2.0), f64);
+    auto twoH = rewriter.create<mlir::arith::MulFOp>(loc, c2, H);
 
-    // g0i = 2H * l_i
-    auto g01 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lx);
-    auto g02 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, ly);
-    auto g03 = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lz);
+    auto minus1 = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(-1.0), f64);
+    auto g00 = rewriter.create<mlir::arith::AddFOp>(loc, minus1, twoH);
 
-    // gij = δij + 2H * l_i * l_j
-    auto lx_lx = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), lx, lx);
-    auto lx_ly = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), lx, ly);
-    auto lx_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), lx, lz);
-    auto ly_ly = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), ly, ly);
-    auto ly_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), ly, lz);
-    auto lz_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), lz, lz);
+    auto g01 = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lx);
+    auto g02 = rewriter.create<mlir::arith::MulFOp>(loc, twoH, ly);
+    auto g03 = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lz);
 
-    auto twoH_lx_lx = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lx_lx);
-    auto twoH_lx_ly = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lx_ly);
-    auto twoH_lx_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lx_lz);
-    auto twoH_ly_ly = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, ly_ly);
-    auto twoH_ly_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, ly_lz);
-    auto twoH_lz_lz = rewriter.create<mlir::arith::MulFOp>(op.getLoc(), twoH, lz_lz);
+    auto lx_lx = rewriter.create<mlir::arith::MulFOp>(loc, lx, lx);
+    auto lx_ly = rewriter.create<mlir::arith::MulFOp>(loc, lx, ly);
+    auto lx_lz = rewriter.create<mlir::arith::MulFOp>(loc, lx, lz);
+    auto ly_ly = rewriter.create<mlir::arith::MulFOp>(loc, ly, ly);
+    auto ly_lz = rewriter.create<mlir::arith::MulFOp>(loc, ly, lz);
+    auto lz_lz = rewriter.create<mlir::arith::MulFOp>(loc, lz, lz);
 
-    auto g11 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), one, twoH_lx_lx);
-    auto g22 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), one, twoH_ly_ly);
-    auto g33 = rewriter.create<mlir::arith::AddFOp>(op.getLoc(), one, twoH_lz_lz);
+    auto twoH_lx_lx = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lx_lx);
+    auto twoH_lx_ly = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lx_ly);
+    auto twoH_lx_lz = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lx_lz);
+    auto twoH_ly_ly = rewriter.create<mlir::arith::MulFOp>(loc, twoH, ly_ly);
+    auto twoH_ly_lz = rewriter.create<mlir::arith::MulFOp>(loc, twoH, ly_lz);
+    auto twoH_lz_lz = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lz_lz);
+
+    auto g11 = rewriter.create<mlir::arith::AddFOp>(loc, one, twoH_lx_lx);
+    auto g22 = rewriter.create<mlir::arith::AddFOp>(loc, one, twoH_ly_ly);
+    auto g33 = rewriter.create<mlir::arith::AddFOp>(loc, one, twoH_lz_lz);
 
     auto g12 = twoH_lx_ly;
     auto g13 = twoH_lx_lz;
     auto g23 = twoH_ly_lz;
 
-    // tensor<4x4xf64> via tensor.empty + tensor.insert
-    auto c0  = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 0);
-    auto c1  = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 1);
-    auto c2i = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 2);
-    auto c3  = rewriter.create<mlir::arith::ConstantIndexOp>(op.getLoc(), 3);
+    auto c0  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 0);
+    auto c1  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 1);
+    auto c2i = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 2);
+    auto c3  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 3);
 
-    auto empty = rewriter.create<mlir::tensor::EmptyOp>(op.getLoc(),
-                          mlir::ArrayRef<int64_t>{4, 4}, f64);
+    auto empty = rewriter.create<mlir::tensor::EmptyOp>(loc, mlir::ArrayRef<int64_t>{4, 4}, f64);
 
     auto ins = [&](mlir::Value tensor, mlir::Value v, mlir::Value i, mlir::Value j) {
-      return rewriter.create<mlir::tensor::InsertOp>(op.getLoc(), v, tensor,
-                                                     mlir::ValueRange{i, j});
+      return rewriter.create<mlir::tensor::InsertOp>(loc, v, tensor, mlir::ValueRange{i, j});
     };
 
     mlir::Value T = empty.getResult();
@@ -154,17 +154,14 @@ struct ExpandMetricGetPattern
     T = ins(T, g01, c0, c1);
     T = ins(T, g02, c0, c2i);
     T = ins(T, g03, c0, c3);
-
     T = ins(T, g01, c1, c0);
     T = ins(T, g11, c1, c1);
     T = ins(T, g12, c1, c2i);
     T = ins(T, g13, c1, c3);
-
     T = ins(T, g02, c2i, c0);
     T = ins(T, g12, c2i, c1);
     T = ins(T, g22, c2i, c2i);
     T = ins(T, g23, c2i, c3);
-
     T = ins(T, g03, c3, c0);
     T = ins(T, g13, c3, c1);
     T = ins(T, g23, c3, c2i);
@@ -174,7 +171,6 @@ struct ExpandMetricGetPattern
     return mlir::success();
   }
 };
-
 
 struct RelExpandMetricPass
     : mlir::PassWrapper<RelExpandMetricPass, mlir::OperationPass<mlir::ModuleOp>> {
