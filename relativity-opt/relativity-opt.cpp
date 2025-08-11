@@ -17,6 +17,7 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "Relativity/RelativityDialect.h"
 #include "../lib/Relativity/RelativityLoweringPass.h"
+#include "../lib/Relativity/RelExpandMetricPass.h"
 #include "../lib/Relativity/AssembleMetricTensorPass.h"
 #include "Relativity/RelativityOpsDialect.cpp.inc"
 #include "../lib/Relativity/RelativitySimplifyPass.h"
@@ -37,6 +38,9 @@ int main(int argc, char **argv) {
 			});
 	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
 			return mlir::relativity::createRelativitySimplifyPass();
+			});
+	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+			return mlir::relativity::createRelExpandMetricPass();
 			});
 
 	mlir::DialectRegistry registry;
