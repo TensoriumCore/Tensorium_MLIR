@@ -9,6 +9,7 @@ def Relativity_Dialect : Dialect {
     especially for the 3+1 decomposition and BSSN formulation.
   }];
   let cppNamespace = "::mlir::relativity";
+  let usePropertiesForAttributes = 0;
 }
 
 class Relativity_Op<string mnemonic, list<Trait> traits = []> :

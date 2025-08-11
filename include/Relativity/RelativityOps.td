@@ -6,6 +6,7 @@ include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/DialectBase.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/IR/OpBase.td"
 
 def Relativity_FooOp : Relativity_Op<"foo", [Pure,
                                              SameOperandsAndResultType]> {
@@ -46,7 +47,6 @@ def CreateConformalMetricOp : Relativity_Op<"create_conformal_metric", [Pure]> {
   }];
 
   let hasVerifier = 1;
-  let hasCustomAssemblyFormat = 1;
   let builders = [
 	  OpBuilder<(ins "Value":$gamma_ij, "Value":$chi)>
   ];
@@ -83,6 +83,18 @@ def MetricTensorOp : Relativity_Op<"metric_tensor", [Pure]> {
   }];
 }
 
+def Relativity_MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
+  let summary = "Build g_{μν} for a named metric at a spacetime point";
+  let hasVerifier = 1;     
+  let hasCustomAssemblyFormat = 0;
+
+  let arguments = (ins
+    StrAttr:$name,
+    DictionaryAttr:$params,
+    AnyType:$x
+  );
+  let results = (outs RankedTensorOf<[F64]>:$g);
+}
 
 
 #endif // RELATIVITY_OPS
