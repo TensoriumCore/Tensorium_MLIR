@@ -1,9 +1,7 @@
-// test_metric_get_in_func.mlir
 module {
-  func.func @main() -> tensor<4x4xf64> {
-    %x = arith.constant dense<[1.0, 2.0, 3.0, 4.0]> : vector<4xf64>
+  func.func @main(%x: vector<4xf64>) -> tensor<4x4xf64> {
     %g = "relativity.metric.get"(%x)
-         { name = "minkowski", params = {} }
+         { name = "schwarzschild_ks", params = { M = 1.0 : f64 } }
          : (vector<4xf64>) -> tensor<4x4xf64>
     return %g : tensor<4x4xf64>
   }
