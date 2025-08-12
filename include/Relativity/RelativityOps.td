@@ -85,16 +85,36 @@ def MetricTensorOp : Relativity_Op<"metric_tensor", [Pure]> {
 
 def Relativity_MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
   let summary = "Build g_{μν} for a named metric at a spacetime point";
-  let hasVerifier = 1;     
-  let hasCustomAssemblyFormat = 0;
+  let hasVerifier = 1;
 
   let arguments = (ins
     StrAttr:$name,
-    DictionaryAttr:$params,
+    OptionalAttr<DictionaryAttr>:$params,
     AnyType:$x
   );
   let results = (outs RankedTensorOf<[F64]>:$g);
+
+  let assemblyFormat = [{
+    $name (` ` $params^)? $x `:` type($x) `->` type($g) attr-dict
+  }];
 }
 
 
+def Relativity_SpatialMetricOp : Relativity_Op<"metric.spatial", [Pure]> {
+  let summary = "Extract spatial 3×3 metric γ_ij from 4×4 g_{μν}";
+  let description = [{
+    Takes a 4×4 spacetime metric g_{μν} and returns the spatial block γ_ij,
+    i.e. rows/cols 1..3 in 0-based indexing.
+  }];
+
+  // Optionnel: hasVerifier = 1 si tu ajoutes un verifier côté C++
+  // let hasVerifier = 1;
+
+  let arguments = (ins RankedTensorOf<[F64]>:$g4);
+  let results   = (outs RankedTensorOf<[F64]>:$gamma);
+
+  let assemblyFormat = [{
+    $g4 attr-dict `:` type($g4) `->` type($gamma)
+  }];
+}
 #endif // RELATIVITY_OPS

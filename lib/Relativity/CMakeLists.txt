@@ -6,6 +6,7 @@ add_mlir_dialect_library(MLIRRelativity
 		AssembleMetricTensorPass.cpp
 		Utils/FormulaParser.cpp
 		RelExpandMetricPass.cpp
+		RelExtractSpatialPass.cpp
 
         ADDITIONAL_HEADER_DIRS
         ${PROJECT_SOURCE_DIR}/include/Relativity
