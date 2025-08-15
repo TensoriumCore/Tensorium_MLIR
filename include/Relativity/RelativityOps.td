@@ -99,15 +99,12 @@ def Relativity_MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
   }];
 }
 
-
 def Relativity_SpatialMetricOp : Relativity_Op<"metric.spatial", [Pure]> {
   let summary = "Extract spatial 3×3 metric γ_ij from 4×4 g_{μν}";
   let description = [{
     Takes a 4×4 spacetime metric g_{μν} and returns the spatial block γ_ij,
     i.e. rows/cols 1..3 in 0-based indexing.
   }];
-
-  // Optionnel: hasVerifier = 1 si tu ajoutes un verifier côté C++
   // let hasVerifier = 1;
 
   let arguments = (ins RankedTensorOf<[F64]>:$g4);
