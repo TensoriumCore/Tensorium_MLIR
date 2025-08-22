@@ -1,8 +1,5 @@
 #pragma once
 
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/Pass/Pass.h"
 #include "Relativity/RelativityOps.h"
 #include "Utils/FormulaParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"

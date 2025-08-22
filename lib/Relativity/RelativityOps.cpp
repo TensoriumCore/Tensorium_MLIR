@@ -1,8 +1,8 @@
 #include "Relativity/RelativityOps.h"
 #include "Relativity/RelativityDialect.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpImplementation.h"
 #include "llvm/Support/Casting.h"
-#include "mlir/IR/BuiltinTypes.h"
 
 using namespace mlir;
 using namespace mlir::relativity;
@@ -30,11 +30,15 @@ void CreateConformalMetricOp::build(OpBuilder &builder, OperationState &state,
 
 static LogicalResult isVec4F64(Type ty) {
   if (auto vt = dyn_cast<VectorType>(ty))
-    return (vt.getRank()==1 && vt.getShape()[0]==4 && vt.getElementType().isF64())
-           ? success() : failure();
+    return (vt.getRank() == 1 && vt.getShape()[0] == 4 &&
+            vt.getElementType().isF64())
+               ? success()
+               : failure();
   if (auto rt = dyn_cast<RankedTensorType>(ty))
-    return (rt.getRank()==1 && rt.getShape()[0]==4 && rt.getElementType().isF64())
-           ? success() : failure();
+    return (rt.getRank() == 1 && rt.getShape()[0] == 4 &&
+            rt.getElementType().isF64())
+               ? success()
+               : failure();
   return failure();
 }
 
@@ -43,8 +47,8 @@ LogicalResult MetricGetOp::verify() {
     return emitOpError() << "expects x to be vector<4xf64> or tensor<4xf64>";
 
   auto gTy = dyn_cast<RankedTensorType>(getG().getType());
-  if (!gTy || gTy.getRank()!=2 || gTy.getShape()[0]!=4 || gTy.getShape()[1]!=4 ||
-      !gTy.getElementType().isF64())
+  if (!gTy || gTy.getRank() != 2 || gTy.getShape()[0] != 4 ||
+      gTy.getShape()[1] != 4 || !gTy.getElementType().isF64())
     return emitOpError() << "expects result type tensor<4x4xf64>";
 
   return success();

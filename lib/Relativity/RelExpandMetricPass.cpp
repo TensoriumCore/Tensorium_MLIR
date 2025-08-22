@@ -1,17 +1,14 @@
 #include "RelExpandMetricPass.h"
 #include "Relativity/RelativityOps.h"
-#include "Relativity/RelativityOps.h"
-
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/BuiltinAttributes.h"
-#include "mlir/IR/BuiltinOps.h"       // ModuleOp
+#include "mlir/IR/BuiltinOps.h" // ModuleOp
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Casting.h"
 
@@ -27,8 +24,9 @@ struct ExpandMetricGetPattern
   ExpandMetricGetPattern(mlir::MLIRContext *ctx)
       : OpRewritePattern<mlir::relativity::MetricGetOp>(ctx) {}
 
-  mlir::LogicalResult matchAndRewrite(mlir::relativity::MetricGetOp op,
-                                      mlir::PatternRewriter &rewriter) const override {
+  mlir::LogicalResult
+  matchAndRewrite(mlir::relativity::MetricGetOp op,
+                  mlir::PatternRewriter &rewriter) const override {
     auto nameAttr = op->getAttrOfType<mlir::StringAttr>("name");
     if (!nameAttr)
       return mlir::failure();
@@ -41,13 +39,12 @@ struct ExpandMetricGetPattern
           gTy.getShape()[1] != 4 || !gTy.getElementType().isF64())
         return rewriter.notifyMatchFailure(op, "expected tensor<4x4xf64>");
 
-      llvm::SmallVector<double, 16> vals = {
-          -1.0, 0.0, 0.0, 0.0,
-           0.0, 1.0, 0.0, 0.0,
-           0.0, 0.0, 1.0, 0.0,
-           0.0, 0.0, 0.0, 1.0};
-      auto dense = mlir::DenseFPElementsAttr::get(gTy, llvm::ArrayRef<double>(vals));
-      auto cst   = rewriter.create<mlir::arith::ConstantOp>(loc, gTy, dense);
+      llvm::SmallVector<double, 16> vals = {-1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                                            0.0,  0.0, 0.0, 0.0, 1.0, 0.0,
+                                            0.0,  0.0, 0.0, 1.0};
+      auto dense =
+          mlir::DenseFPElementsAttr::get(gTy, llvm::ArrayRef<double>(vals));
+      auto cst = rewriter.create<mlir::arith::ConstantOp>(loc, gTy, dense);
       rewriter.replaceOp(op, cst.getResult());
       return mlir::success();
     }
@@ -68,18 +65,23 @@ struct ExpandMetricGetPattern
       }
     }
 
-    auto f64  = rewriter.getF64Type();
-    auto cstM = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(Mdef), f64);
+    auto f64 = rewriter.getF64Type();
+    auto cstM = rewriter.create<mlir::arith::ConstantFloatOp>(
+        loc, llvm::APFloat(Mdef), f64);
 
     auto i0 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 0);
     auto i1 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 1);
     auto i2 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 2);
     auto i3 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 3);
 
-    auto t = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i0);
-    auto x = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i1);
-    auto y = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i2);
-    auto z = rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i3);
+    auto t =
+        rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i0);
+    auto x =
+        rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i1);
+    auto y =
+        rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i2);
+    auto z =
+        rewriter.create<mlir::vector::ExtractElementOp>(loc, op.getX(), i3);
     (void)t;
 
     auto x2 = rewriter.create<mlir::arith::MulFOp>(loc, x, x);
@@ -88,28 +90,32 @@ struct ExpandMetricGetPattern
     auto s1 = rewriter.create<mlir::arith::AddFOp>(loc, x2, y2);
     auto s2 = rewriter.create<mlir::arith::AddFOp>(loc, s1, z2);
 
-	// après lecture de M
-	double eps = 1e-15;
-	if (auto dict = op->getAttrOfType<mlir::DictionaryAttr>("params")) {
-		if (auto Ea = llvm::dyn_cast_or_null<mlir::FloatAttr>(dict.get("eps")))
-			eps = Ea.getValueAsDouble();
-	}
-	auto eps2 = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(eps*eps), f64);
-    auto lt   = rewriter.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OLT, s2, eps2);
-    auto s2s  = rewriter.create<mlir::arith::SelectOp>(loc, lt, eps2, s2);
-    auto r    = rewriter.create<mlir::math::SqrtOp>(loc, s2s);
+    double eps = 1e-15;
+    if (auto dict = op->getAttrOfType<mlir::DictionaryAttr>("params")) {
+      if (auto Ea = llvm::dyn_cast_or_null<mlir::FloatAttr>(dict.get("eps")))
+        eps = Ea.getValueAsDouble();
+    }
+    auto eps2 = rewriter.create<mlir::arith::ConstantFloatOp>(
+        loc, llvm::APFloat(eps * eps), f64);
+    auto lt = rewriter.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OLT, s2, eps2);
+    auto s2s = rewriter.create<mlir::arith::SelectOp>(loc, lt, eps2, s2);
+    auto r = rewriter.create<mlir::math::SqrtOp>(loc, s2s);
 
-    auto H  = rewriter.create<mlir::arith::DivFOp>(loc, cstM, r);
+    auto H = rewriter.create<mlir::arith::DivFOp>(loc, cstM, r);
 
-    auto one = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(1.0), f64);
-    auto lx  = rewriter.create<mlir::arith::DivFOp>(loc, x, r);
-    auto ly  = rewriter.create<mlir::arith::DivFOp>(loc, y, r);
-    auto lz  = rewriter.create<mlir::arith::DivFOp>(loc, z, r);
+    auto one = rewriter.create<mlir::arith::ConstantFloatOp>(
+        loc, llvm::APFloat(1.0), f64);
+    auto lx = rewriter.create<mlir::arith::DivFOp>(loc, x, r);
+    auto ly = rewriter.create<mlir::arith::DivFOp>(loc, y, r);
+    auto lz = rewriter.create<mlir::arith::DivFOp>(loc, z, r);
 
-    auto c2   = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(2.0), f64);
+    auto c2 = rewriter.create<mlir::arith::ConstantFloatOp>(
+        loc, llvm::APFloat(2.0), f64);
     auto twoH = rewriter.create<mlir::arith::MulFOp>(loc, c2, H);
 
-    auto minus1 = rewriter.create<mlir::arith::ConstantFloatOp>(loc, llvm::APFloat(-1.0), f64);
+    auto minus1 = rewriter.create<mlir::arith::ConstantFloatOp>(
+        loc, llvm::APFloat(-1.0), f64);
     auto g00 = rewriter.create<mlir::arith::AddFOp>(loc, minus1, twoH);
 
     auto g01 = rewriter.create<mlir::arith::MulFOp>(loc, twoH, lx);
@@ -138,15 +144,18 @@ struct ExpandMetricGetPattern
     auto g13 = twoH_lx_lz;
     auto g23 = twoH_ly_lz;
 
-    auto c0  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 0);
-    auto c1  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 1);
+    auto c0 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 0);
+    auto c1 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 1);
     auto c2i = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 2);
-    auto c3  = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 3);
+    auto c3 = rewriter.create<mlir::arith::ConstantIndexOp>(loc, 3);
 
-    auto empty = rewriter.create<mlir::tensor::EmptyOp>(loc, mlir::ArrayRef<int64_t>{4, 4}, f64);
+    auto empty = rewriter.create<mlir::tensor::EmptyOp>(
+        loc, mlir::ArrayRef<int64_t>{4, 4}, f64);
 
-    auto ins = [&](mlir::Value tensor, mlir::Value v, mlir::Value i, mlir::Value j) {
-      return rewriter.create<mlir::tensor::InsertOp>(loc, v, tensor, mlir::ValueRange{i, j});
+    auto ins = [&](mlir::Value tensor, mlir::Value v, mlir::Value i,
+                   mlir::Value j) {
+      return rewriter.create<mlir::tensor::InsertOp>(loc, v, tensor,
+                                                     mlir::ValueRange{i, j});
     };
 
     mlir::Value T = empty.getResult();
@@ -173,21 +182,19 @@ struct ExpandMetricGetPattern
 };
 
 struct RelExpandMetricPass
-    : mlir::PassWrapper<RelExpandMetricPass, mlir::OperationPass<mlir::ModuleOp>> {
+    : mlir::PassWrapper<RelExpandMetricPass,
+                        mlir::OperationPass<mlir::ModuleOp>> {
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RelExpandMetricPass)
 
   mlir::StringRef getArgument() const final { return "rel-expand-metric"; }
   mlir::StringRef getDescription() const final {
-    return "Expand relativity.metric.get into arith/tensor ops (Minkowski/Schwarzschild KS)";
+    return "Expand relativity.metric.get into arith/tensor ops "
+           "(Minkowski/Schwarzschild KS)";
   }
 
   void getDependentDialects(mlir::DialectRegistry &registry) const override {
-    registry.insert<
-      mlir::arith::ArithDialect,
-      mlir::math::MathDialect,
-      mlir::tensor::TensorDialect,
-      mlir::vector::VectorDialect
-    >();
+    registry.insert<mlir::arith::ArithDialect, mlir::math::MathDialect,
+                    mlir::tensor::TensorDialect, mlir::vector::VectorDialect>();
   }
 
   void runOnOperation() override {

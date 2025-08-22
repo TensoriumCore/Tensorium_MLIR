@@ -19,40 +19,40 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 
-#include "llvm/Config/llvm-config.h"
 int main(int argc, char **argv) {
-	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		return createLowerRelativityPass();
-	});
-	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		return mlir::relativity::createAssembleMetricTensorPass();
-	});
-	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		return mlir::relativity::createRelativitySimplifyPass();
-	});
-	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		return mlir::relativity::createRelExpandMetricPass();
-	});
-	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-		return mlir::relativity::createRelExtractSpatialPass();
-	});
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return createLowerRelativityPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::relativity::createAssembleMetricTensorPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::relativity::createRelativitySimplifyPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::relativity::createRelExpandMetricPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return mlir::relativity::createRelExtractSpatialPass();
+  });
 
-	mlir::DialectRegistry registry;
-	registry.insert<mlir::relativity::RelativityDialect>();
-	registry.insert<mlir::math::MathDialect>();
-	registry.insert<mlir::arith::ArithDialect>();
-	registry.insert<mlir::func::FuncDialect>();
-	registry.insert<mlir::tensor::TensorDialect>();
-	registry.insert<mlir::scf::SCFDialect>();
-	registry.insert<mlir::memref::MemRefDialect>();
-	registry.insert<mlir::linalg::LinalgDialect>();
+  mlir::DialectRegistry registry;
+  registry.insert<mlir::relativity::RelativityDialect>();
+  registry.insert<mlir::math::MathDialect>();
+  registry.insert<mlir::arith::ArithDialect>();
+  registry.insert<mlir::func::FuncDialect>();
+  registry.insert<mlir::tensor::TensorDialect>();
+  registry.insert<mlir::scf::SCFDialect>();
+  registry.insert<mlir::memref::MemRefDialect>();
+  registry.insert<mlir::linalg::LinalgDialect>();
 
-	return mlir::asMainReturnCode(
-		mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
+  return mlir::asMainReturnCode(
+      mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
 }
