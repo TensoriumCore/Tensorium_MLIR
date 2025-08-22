@@ -27,10 +27,6 @@
 
 #include "llvm/Config/llvm-config.h"
 int main(int argc, char **argv) {
-// #if LLVM_VERSION_MAJOR < 22
-// 	llvm::InitLLVM y(argc, argv);
-// #endif
-
 	mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
 		return createLowerRelativityPass();
 	});

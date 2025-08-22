@@ -2,7 +2,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(DumpTensoriumGpuFuncsPass LANGUAGES C CXX)
 
-# Trouve LLVM et Clang
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
 
@@ -12,7 +11,6 @@ add_definitions(${LLVM_DEFINITIONS})
 
 add_library(DumpTensoriumGpuFuncsPass SHARED DumpTensoriumGpuFuncs.cpp)
 
-# Utiliser les targets CMake officielles
 target_link_libraries(DumpTensoriumGpuFuncsPass PRIVATE
   LLVMCore
   LLVMSupport
