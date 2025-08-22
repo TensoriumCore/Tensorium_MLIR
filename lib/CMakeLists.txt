@@ -1,2 +1,2 @@
 add_subdirectory(Relativity)
-add_subdirectory(CompilerHandler)
+# add_subdirectory(CompilerHandler)
