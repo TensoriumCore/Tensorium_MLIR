@@ -3,6 +3,7 @@
 #include "../lib/Relativity/RelExtractSpatialPass.h"
 #include "../lib/Relativity/RelativityLoweringPass.h"
 #include "../lib/Relativity/RelativitySimplifyPass.h"
+#include "../lib/Relativity/LinearAlgebra/RelLinAlgLowering.h"
 #include "Relativity/RelativityDialect.h"
 #include "Relativity/RelativityOpsDialect.cpp.inc"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -41,6 +42,9 @@ int main(int argc, char **argv) {
   });
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelExtractSpatialPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+	return mlir::relativity::createRelLinAlgLowerPass();
   });
 
   mlir::DialectRegistry registry;

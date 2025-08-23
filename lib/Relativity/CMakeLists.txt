@@ -7,6 +7,7 @@ add_mlir_dialect_library(MLIRRelativity
 		Utils/FormulaParser.cpp
 		RelExpandMetricPass.cpp
 		RelExtractSpatialPass.cpp
+		LinearAlgebra/RelLinAlgLowering.cpp
 
         ADDITIONAL_HEADER_DIRS
         ${PROJECT_SOURCE_DIR}/include/Relativity
@@ -29,4 +30,4 @@ target_include_directories(MLIRRelativity PRIVATE
   ${CMAKE_SOURCE_DIR}/Tensorium_Tex/lib/Frontend
 )
 
-# add_subdirectory(Utils)
+# add_subdirectory(LinearAlgebra)

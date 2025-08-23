@@ -114,4 +114,32 @@ def Relativity_SpatialMetricOp : Relativity_Op<"metric.spatial", [Pure]> {
     $g4 attr-dict `:` type($g4) `->` type($gamma)
   }];
 }
+
+
+def Rel_Det3x3Op : Op<Relativity_Dialect, "det3x3",
+    [Pure]> {
+  let summary = "determinant of a 3x3 matrix";
+  let description = [{ Compute det(tensor<3x3xf64>) -> f64. }];
+  let arguments = (ins TensorOf<[F64]>:$A);
+  let results   = (outs F64:$det);
+  let assemblyFormat = [{
+    $A `:` type($A) `->` type($det) attr-dict
+  }];
+}
+
+def Rel_Inv3x3Op : Op<Relativity_Dialect, "inv3x3",
+    [Pure]> {
+  let summary = "inverse of a 3x3 matrix";
+  let description = [{
+    Compute inverse of A in tensor<3x3xf64> using adj(A)/det(A).
+    (No pivoting; caller must ensure det != 0.)
+  }];
+  let arguments = (ins TensorOf<[F64]>:$A);
+  let results   = (outs TensorOf<[F64]>:$Ainv);
+  let assemblyFormat = [{
+    $A `:` type($A) `->` type($Ainv) attr-dict
+  }];
+}
+
+
 #endif // RELATIVITY_OPS
