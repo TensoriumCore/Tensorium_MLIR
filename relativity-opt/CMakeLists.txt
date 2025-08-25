@@ -1,6 +1,8 @@
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
 include_directories(/home/at0m/llvm/mlir/include)
+
 set(LIBS
         ${dialect_libs}
         ${conversion_libs}
