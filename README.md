@@ -1,3 +1,5 @@
+<img width="723" height="364" alt="tensorium" src="https://github.com/user-attachments/assets/423ed0a6-058f-480d-b398-51a21df1234c" />
+
 # Tensorium_MLIR
 
 A symbolic-to-MLIR codegen tool for numerical relativity.
