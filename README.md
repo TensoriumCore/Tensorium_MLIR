@@ -199,6 +199,22 @@ disclamer: atm the lowering pipeline is working but the metric tensor results ar
 
 ## Citation
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16950267.svg)](https://doi.org/10.5281/zenodo.16950267)
+
+bibitex :
+
+```tex
+@software{touzalin_tensorium_mlir_2025_16950267,
+  author    = {Louis Touzalin},
+  title     = {{Tensorium-MLIR: Relativity Dialect \& Codegen}},
+  version   = {v0.1.0-prealpha},
+  year      = {2025},
+  month     = aug,
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.16950267},
+  url       = {https://doi.org/10.5281/zenodo.16950267}
+}
+```
+
 ## License
 
 MIT — see [LICENSE](./LICENSE)
