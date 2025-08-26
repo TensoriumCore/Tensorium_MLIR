@@ -122,7 +122,7 @@ Translate to LLVM IR and compile with a C++ tester:
  mlir-translate --mlir-to-llvmir lowered.mlir > lowered.ll
  clang++ -c lowered.ll -o metric_tensor.o -O3 && clang++ test/Relativity/test.cpp metric_tensor.o -o test_metric -lm -O3 -std=c++17
 ```
-Translate to LLVM IR and compile with a C++ tester:
+exemple Output:
 ```bash
 Schwarzschild spatial metric at:
 X = [0.0000000000000000e+00, 1.0000000000000000e+00, 1.0000000000000000e+00]
