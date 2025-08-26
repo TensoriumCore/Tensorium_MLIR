@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Tensorium-MLIR: Relativity Dialect & Codegen"
+type: software
+version: "0.1.0-prealpha"
+date-released: 2025-08-26
+license: MIT
+authors:
+  - family-names: Touzalin
+    given-names: Louis
+repository-code: "https://github.com/TensoriumCore/Tensorium_MLIR"
+url: "https://github.com/TensoriumCore/Tensorium_MLIR"
+doi: 10.5281/zenodo.16950267
+abstract: >
+  Tensorium-MLIR provides a domain-specific MLIR dialect for 3+1 general relativity
+  (ADM/BSSN), specialized rewrite rules (e.g., Kerr–Schild rank-1 updates), and
+  portable lowering to high-performance kernels (vector/LLVM). This pre-alpha release
+  demonstrates a full symbolic → MLIR → LLVM pipeline for Kerr–Schild spatial metrics.
+keywords:
+  - MLIR
+  - numerical relativity
+  - ADM
+  - BSSN
+  - Kerr-Schild
+  - code generation
+  - compiler
+  - DSL
+  - AVX2
+  - FMA
+preferred-citation:
+  type: software
+  title: "Tensorium-MLIR: Relativity Dialect & Codegen"
+  authors:
+    - family-names: Touzalin
+      given-names: Louis
+  version: "0.1.0-prealpha"
+  date-released: 2025-08-26
+  doi: 10.5281/zenodo.16950267
+  url: "https://github.com/TensoriumCore/Tensorium_MLIR"
