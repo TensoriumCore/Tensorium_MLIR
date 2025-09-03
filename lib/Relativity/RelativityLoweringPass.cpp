@@ -117,11 +117,6 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
           }
         }
       }
-      //   if (hasExpVal && expVal == -1.0) {
-      //     auto one = rewriter.create<arith::ConstantOp>(
-      //         loc, rewriter.getF64FloatAttr(1.0));
-      //     return rewriter.create<arith::DivFOp>(loc, one, lhs);
-      //   }
       return rewriter.create<math::PowFOp>(loc, lhs, rhs);
     }
 
