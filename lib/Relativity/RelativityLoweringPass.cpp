@@ -116,7 +116,8 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
             }
           }
         }
-      }
+      } else
+        expVal = 0.0;
       return rewriter.create<math::PowFOp>(loc, lhs, rhs);
     }
 

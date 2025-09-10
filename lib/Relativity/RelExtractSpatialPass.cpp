@@ -23,34 +23,29 @@ struct LowerSpatialMetricPattern
                                 PatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
 
-    auto inTy = dyn_cast<RankedTensorType>(op.getG4().getType());
-    auto outTy = dyn_cast<RankedTensorType>(op.getGamma().getType());
+    auto inTy  = dyn_cast<RankedTensorType>(op.getG4().getType());
+    auto outTy = dyn_cast<RankedTensorType>(op.getType()); // op retourne gamma
+
     if (!inTy || inTy.getRank() != 2 || inTy.getDimSize(0) != 4 ||
         inTy.getDimSize(1) != 4 || !inTy.getElementType().isF64())
       return rewriter.notifyMatchFailure(op, "g4 must be tensor<4x4xf64>");
     if (!outTy || outTy.getRank() != 2 || outTy.getDimSize(0) != 3 ||
         outTy.getDimSize(1) != 3 || !outTy.getElementType().isF64())
-      return rewriter.notifyMatchFailure(op, "gamma must be tensor<3x3xf64>");
+      return rewriter.notifyMatchFailure(op, "result must be tensor<3x3xf64>");
+    SmallVector<OpFoldResult> offsets = {
+        rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
+    SmallVector<OpFoldResult> sizes = {
+        rewriter.getIndexAttr(3), rewriter.getIndexAttr(3)};
+    SmallVector<OpFoldResult> strides = {
+        rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
 
-    auto f64 = outTy.getElementType();
-    Value T =
-        rewriter.create<tensor::EmptyOp>(loc, ArrayRef<int64_t>{3, 3}, f64);
+    Value slice = rewriter.create<tensor::ExtractSliceOp>(
+        loc, op.getG4(), offsets, sizes, strides);
 
-    for (int64_t i = 0; i < 3; ++i) {
-      for (int64_t j = 0; j < 3; ++j) {
-        Value ii4 = cidx(rewriter, loc, i + 1);
-        Value jj4 = cidx(rewriter, loc, j + 1);
-        Value gij = rewriter.create<tensor::ExtractOp>(loc, op.getG4(),
-                                                       ValueRange{ii4, jj4});
+    if (slice.getType() != outTy)
+      slice = rewriter.create<tensor::CastOp>(loc, outTy, slice);
 
-        Value ii3 = cidx(rewriter, loc, i);
-        Value jj3 = cidx(rewriter, loc, j);
-        T = rewriter.create<tensor::InsertOp>(loc, gij, T,
-                                              ValueRange{ii3, jj3});
-      }
-    }
-
-    rewriter.replaceOp(op, T);
+    rewriter.replaceOp(op, slice);
     return success();
   }
 };
