@@ -103,7 +103,7 @@ Lower the Relativity dialect:
 ```
 Lower the Relativity dialect:
 ```bash
-➜  build git:(main) ✗ mlir-opt test/Relativity/test_expand_metric_3p1.mlir \
+mlir-opt test/Relativity/test_expand_metric_3p1.mlir \
   --convert-tensor-to-linalg \
   --convert-linalg-to-loops \
   --one-shot-bufferize="bufferize-function-boundaries" \
