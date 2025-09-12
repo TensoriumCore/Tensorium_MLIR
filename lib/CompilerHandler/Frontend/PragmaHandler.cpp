@@ -64,8 +64,6 @@ public:
                         if (alreadyAnnotated.insert(FD).second) {
                             exportedFunctions.push_back(FD);
                             exportTargets.push_back(it->target);
-                            // llvm::errs() << "[Tensorium] Mark function '" << FD->getNameInfo().getAsString()
-                            //              << "' for target " << it->target << "\n";
                         }
                     }
                 }
@@ -126,8 +124,6 @@ class TensoriumConsumer : public ASTConsumer {
 				out << "#define UNUSED(x) (void)(x)\n";
 				out << attr << funcCode << "\n";
 				out.close();
-
-				// llvm::errs() << "[Tensorium] Exported " << fname << "\n";
 			}
 		}
 };
