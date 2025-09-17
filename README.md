@@ -11,9 +11,10 @@ The project aims to build a bridge between **symbolic physics** and **compiler t
 It aspires to empower physicists and researchers to write **high-level tensorial expressions**, which are then compiled down to **optimized low-level code** (LLVM IR, GPU kernels, etc.).
 
 ## Status
-This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity. The current options are :
+This is currently a proof of concept, only compile on LLVM 20!! . The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity. The current options are :
 
-- Custom LaTex parser
+- Custom LaTex parser (not really working atm)
+- ARM compatibility
 - Custom high level MLIR Dialect from LaTeX to create relativistic tensor patterns
 - Emit lower passes MLIR (affine,Linealg/tensor/memref) from metric Tex files
 - Can print Custom AST from the parser
