@@ -62,7 +62,8 @@
     %158 = "tensor.insert"(%138, %157, %107, %106) : (f64, tensor<4x4xf64>, index, index) -> tensor<4x4xf64>
     %159 = "tensor.insert"(%142, %158, %107, %107) : (f64, tensor<4x4xf64>, index, index) -> tensor<4x4xf64>
     %160 = "tensor.extract_slice"(%159) <{operandSegmentSizes = array<i32: 1, 0, 0, 0>, static_offsets = array<i64: 1, 1>, static_sizes = array<i64: 3, 3>, static_strides = array<i64: 1, 1>}> : (tensor<4x4xf64>) -> tensor<3x3xf64>
-    "func.return"(%160) : (tensor<3x3xf64>) -> ()
+    %161 = "relativity.metric.spatial"(%160) : (tensor<3x3xf64>) -> tensor<3x3xf64>
+    "func.return"(%161) : (tensor<3x3xf64>) -> ()
   }) {llvm.emit_c_interface} : () -> ()
   "func.func"() <{function_type = (vector<4xf64>) -> (f64, tensor<3x3xf64>), sym_name = "DetInvGamma", sym_visibility = "public"}> ({
   ^bb0(%arg0: vector<4xf64>):

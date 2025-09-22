@@ -15,6 +15,7 @@ static Value cidx(PatternRewriter &rewriter, Location loc, int64_t v) {
   return rewriter.create<arith::ConstantIndexOp>(loc, v);
 }
 
+
 struct LowerSpatialMetricPattern
     : OpRewritePattern<mlir::relativity::SpatialMetricOp> {
   using OpRewritePattern<mlir::relativity::SpatialMetricOp>::OpRewritePattern;
@@ -23,30 +24,39 @@ struct LowerSpatialMetricPattern
                                 PatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
 
-    auto inTy  = dyn_cast<RankedTensorType>(op.getG4().getType());
-    auto outTy = dyn_cast<RankedTensorType>(op.getType()); 
+    Value g = op->getOperand(0);
+    auto inTy  = dyn_cast<RankedTensorType>(g.getType());
+    auto outTy = dyn_cast<RankedTensorType>(op.getType());
+    if (!inTy || !outTy || !inTy.getElementType().isF64() ||
+        !outTy.getElementType().isF64())
+      return rewriter.notifyMatchFailure(op, "expected ranked f64 tensors");
 
-    if (!inTy || inTy.getRank() != 2 || inTy.getDimSize(0) != 4 ||
-        inTy.getDimSize(1) != 4 || !inTy.getElementType().isF64())
-      return rewriter.notifyMatchFailure(op, "g4 must be tensor<4x4xf64>");
-    if (!outTy || outTy.getRank() != 2 || outTy.getDimSize(0) != 3 ||
-        outTy.getDimSize(1) != 3 || !outTy.getElementType().isF64())
-      return rewriter.notifyMatchFailure(op, "result must be tensor<3x3xf64>");
-    SmallVector<OpFoldResult> offsets = {
-        rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
-    SmallVector<OpFoldResult> sizes = {
-        rewriter.getIndexAttr(3), rewriter.getIndexAttr(3)};
-    SmallVector<OpFoldResult> strides = {
-        rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)};
+    if (inTy.getRank() == 2 && inTy.getDimSize(0) == 3 && inTy.getDimSize(1) == 3) {
+      rewriter.replaceOp(op, g);
+      return success();
+    }
 
-    Value slice = rewriter.create<tensor::ExtractSliceOp>(
-        loc, op.getG4(), offsets, sizes, strides);
+    if (inTy.getRank() == 2 && inTy.getDimSize(0) == 4 && inTy.getDimSize(1) == 4 &&
+        outTy.getRank() == 2 && outTy.getDimSize(0) == 3 && outTy.getDimSize(1) == 3) {
 
-    if (slice.getType() != outTy)
-      slice = rewriter.create<tensor::CastOp>(loc, outTy, slice);
+      SmallVector<OpFoldResult> offsets = {rewriter.getIndexAttr(1),
+                                           rewriter.getIndexAttr(1)};
+      SmallVector<OpFoldResult> sizes   = {rewriter.getIndexAttr(3),
+                                           rewriter.getIndexAttr(3)};
+      SmallVector<OpFoldResult> strides = {rewriter.getIndexAttr(1),
+                                           rewriter.getIndexAttr(1)};
 
-    rewriter.replaceOp(op, slice);
-    return success();
+      Value slice = rewriter.create<tensor::ExtractSliceOp>(loc, g, offsets, sizes, strides);
+
+      if (slice.getType() != outTy)
+        slice = rewriter.create<tensor::CastOp>(loc, outTy, slice);
+
+      rewriter.replaceOp(op, slice);
+      return success();
+    }
+
+    return rewriter.notifyMatchFailure(
+        op, "unsupported input/output shapes for relativity.metric.spatial");
   }
 };
 

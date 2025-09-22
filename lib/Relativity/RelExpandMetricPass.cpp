@@ -176,7 +176,27 @@ struct ExpandMetricGetPattern
     T = ins(T, g23, c3, c2i);
     T = ins(T, g33, c3, c3);
 
-    rewriter.replaceOp(op, T);
+    SmallVector<OpFoldResult> offsets = {rewriter.getIndexAttr(1),
+                                         rewriter.getIndexAttr(1)};
+    SmallVector<OpFoldResult> sizes = {rewriter.getIndexAttr(3),
+                                       rewriter.getIndexAttr(3)};
+    SmallVector<OpFoldResult> strides = {rewriter.getIndexAttr(1),
+                                         rewriter.getIndexAttr(1)};
+
+    auto slice = rewriter.create<tensor::ExtractSliceOp>(
+        loc, mlir::RankedTensorType::get({3, 3}, f64), T, offsets, sizes,
+        strides);
+
+    auto empty3 =
+        rewriter.create<tensor::EmptyOp>(loc, ArrayRef<int64_t>{3, 3}, f64);
+
+    SmallVector<OpFoldResult> zeroOffsets = {rewriter.getIndexAttr(0),
+                                             rewriter.getIndexAttr(0)};
+
+    auto copy = rewriter.create<tensor::InsertSliceOp>(
+        loc, slice, empty3, zeroOffsets, sizes, strides);
+
+    rewriter.replaceOp(op, copy.getResult());
     return mlir::success();
   }
 };

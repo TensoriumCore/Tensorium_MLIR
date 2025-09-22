@@ -8,11 +8,14 @@
 #include "Relativity/RelativityDialect.h"
 #include "Relativity/RelativityOpsDialect.cpp.inc"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -29,6 +32,7 @@
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 
 int main(int argc, char **argv) {
+  mlir::registerAllPasses();
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return createLowerRelativityPass();
   });
@@ -43,7 +47,7 @@ int main(int argc, char **argv) {
   });
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelExtractSpatialPass();
-  });
+	});
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelLinAlgLowerPass();
   });
@@ -52,14 +56,9 @@ int main(int argc, char **argv) {
   });
 
   mlir::DialectRegistry registry;
+  mlir::registerAllDialects(registry); 
   registry.insert<mlir::relativity::RelativityDialect>();
-  registry.insert<mlir::math::MathDialect>();
-  registry.insert<mlir::arith::ArithDialect>();
-  registry.insert<mlir::func::FuncDialect>();
-  registry.insert<mlir::tensor::TensorDialect>();
-  registry.insert<mlir::scf::SCFDialect>();
-  registry.insert<mlir::memref::MemRefDialect>();
-  registry.insert<mlir::linalg::LinalgDialect>();
+
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));
