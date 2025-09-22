@@ -31,3 +31,4 @@ target_include_directories(MLIRRelativity PRIVATE
 )
 
 # add_subdirectory(LinearAlgebra)
+add_subdirectory(RelAddCInterfacePass)

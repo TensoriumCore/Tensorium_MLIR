@@ -1,5 +1,5 @@
 "builtin.module"() ({
-  "func.func"() <{function_type = (vector<4xf64>) -> tensor<3x3xf64>, sym_name = "SchwarzschildSpatial"}> ({
+  "func.func"() <{function_type = (vector<4xf64>) -> tensor<3x3xf64>, sym_name = "SchwarzschildSpatial", sym_visibility = "public"}> ({
   ^bb0(%arg1: vector<4xf64>):
     %100 = "arith.constant"() <{value = 0 : index}> : () -> index
     %101 = "arith.constant"() <{value = -1.000000e+00 : f64}> : () -> f64
@@ -63,8 +63,8 @@
     %159 = "tensor.insert"(%142, %158, %107, %107) : (f64, tensor<4x4xf64>, index, index) -> tensor<4x4xf64>
     %160 = "tensor.extract_slice"(%159) <{operandSegmentSizes = array<i32: 1, 0, 0, 0>, static_offsets = array<i64: 1, 1>, static_sizes = array<i64: 3, 3>, static_strides = array<i64: 1, 1>}> : (tensor<4x4xf64>) -> tensor<3x3xf64>
     "func.return"(%160) : (tensor<3x3xf64>) -> ()
-  }) : () -> ()
-  "func.func"() <{function_type = (vector<4xf64>) -> (f64, tensor<3x3xf64>), sym_name = "DetInvGamma"}> ({
+  }) {llvm.emit_c_interface} : () -> ()
+  "func.func"() <{function_type = (vector<4xf64>) -> (f64, tensor<3x3xf64>), sym_name = "DetInvGamma", sym_visibility = "public"}> ({
   ^bb0(%arg0: vector<4xf64>):
     %0 = "arith.constant"() <{value = 1.000000e-18 : f64}> : () -> f64
     %1 = "arith.constant"() <{value = 1.000000e+00 : f64}> : () -> f64
@@ -80,20 +80,20 @@
     %11 = "tensor.extract"(%6, %4, %3) : (tensor<3x3xf64>, index, index) -> f64
     %12 = "tensor.extract"(%6, %3, %4) : (tensor<3x3xf64>, index, index) -> f64
     %13 = "tensor.extract"(%6, %3, %3) : (tensor<3x3xf64>, index, index) -> f64
-    %14 = "arith.mulf"(%11, %12) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %15 = "arith.mulf"(%10, %13) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %16 = "arith.subf"(%15, %14) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %17 = "arith.mulf"(%8, %13) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %18 = "arith.mulf"(%9, %12) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %19 = "arith.subf"(%18, %17) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %20 = "arith.mulf"(%9, %10) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %21 = "arith.mulf"(%8, %11) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %22 = "arith.subf"(%21, %20) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %23 = "arith.mulf"(%9, %22) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %14 = "arith.mulf"(%10, %13) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %15 = "arith.mulf"(%11, %12) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %16 = "arith.subf"(%14, %15) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %17 = "arith.mulf"(%9, %12) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %18 = "arith.mulf"(%8, %13) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %19 = "arith.subf"(%17, %18) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %20 = "arith.mulf"(%8, %11) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %21 = "arith.mulf"(%9, %10) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %22 = "arith.subf"(%20, %21) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %23 = "arith.mulf"(%7, %16) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %24 = "arith.mulf"(%8, %19) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %25 = "arith.mulf"(%7, %16) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %26 = "arith.addf"(%25, %24) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %27 = "arith.addf"(%26, %23) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %25 = "arith.addf"(%23, %24) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %26 = "arith.mulf"(%9, %22) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %27 = "arith.addf"(%25, %26) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %28 = "tensor.extract"(%6, %5, %5) : (tensor<3x3xf64>, index, index) -> f64
     %29 = "tensor.extract"(%6, %5, %4) : (tensor<3x3xf64>, index, index) -> f64
     %30 = "tensor.extract"(%6, %5, %3) : (tensor<3x3xf64>, index, index) -> f64
@@ -103,42 +103,42 @@
     %34 = "tensor.extract"(%6, %3, %5) : (tensor<3x3xf64>, index, index) -> f64
     %35 = "tensor.extract"(%6, %3, %4) : (tensor<3x3xf64>, index, index) -> f64
     %36 = "tensor.extract"(%6, %3, %3) : (tensor<3x3xf64>, index, index) -> f64
-    %37 = "arith.mulf"(%33, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %38 = "arith.mulf"(%32, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %39 = "arith.subf"(%38, %37) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %40 = "arith.mulf"(%33, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %41 = "arith.mulf"(%31, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %42 = "arith.subf"(%41, %40) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %37 = "arith.mulf"(%32, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %38 = "arith.mulf"(%33, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %39 = "arith.subf"(%37, %38) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %40 = "arith.mulf"(%31, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %41 = "arith.mulf"(%33, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %42 = "arith.subf"(%40, %41) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %43 = "arith.negf"(%42) <{fastmath = #arith.fastmath<none>}> : (f64) -> f64
-    %44 = "arith.mulf"(%32, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %45 = "arith.mulf"(%31, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %46 = "arith.subf"(%45, %44) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %47 = "arith.mulf"(%30, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %48 = "arith.mulf"(%29, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %49 = "arith.subf"(%48, %47) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %44 = "arith.mulf"(%31, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %45 = "arith.mulf"(%32, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %46 = "arith.subf"(%44, %45) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %47 = "arith.mulf"(%29, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %48 = "arith.mulf"(%30, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %49 = "arith.subf"(%47, %48) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %50 = "arith.negf"(%49) <{fastmath = #arith.fastmath<none>}> : (f64) -> f64
-    %51 = "arith.mulf"(%30, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %52 = "arith.mulf"(%28, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %53 = "arith.subf"(%52, %51) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %54 = "arith.mulf"(%29, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %55 = "arith.mulf"(%28, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %56 = "arith.subf"(%55, %54) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %51 = "arith.mulf"(%28, %36) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %52 = "arith.mulf"(%30, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %53 = "arith.subf"(%51, %52) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %54 = "arith.mulf"(%28, %35) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %55 = "arith.mulf"(%29, %34) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %56 = "arith.subf"(%54, %55) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %57 = "arith.negf"(%56) <{fastmath = #arith.fastmath<none>}> : (f64) -> f64
-    %58 = "arith.mulf"(%30, %32) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %59 = "arith.mulf"(%29, %33) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %60 = "arith.subf"(%59, %58) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %61 = "arith.mulf"(%30, %31) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %62 = "arith.mulf"(%28, %33) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %63 = "arith.subf"(%62, %61) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %58 = "arith.mulf"(%29, %33) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %59 = "arith.mulf"(%30, %32) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %60 = "arith.subf"(%58, %59) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %61 = "arith.mulf"(%28, %33) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %62 = "arith.mulf"(%30, %31) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %63 = "arith.subf"(%61, %62) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %64 = "arith.negf"(%63) <{fastmath = #arith.fastmath<none>}> : (f64) -> f64
-    %65 = "arith.mulf"(%29, %31) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %66 = "arith.mulf"(%28, %32) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %67 = "arith.subf"(%66, %65) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %68 = "arith.mulf"(%30, %46) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %65 = "arith.mulf"(%28, %32) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %66 = "arith.mulf"(%29, %31) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %67 = "arith.subf"(%65, %66) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %68 = "arith.mulf"(%28, %39) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %69 = "arith.mulf"(%29, %43) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %70 = "arith.mulf"(%28, %39) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %71 = "arith.addf"(%70, %69) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
-    %72 = "arith.addf"(%71, %68) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %70 = "arith.addf"(%68, %69) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %71 = "arith.mulf"(%30, %46) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
+    %72 = "arith.addf"(%70, %71) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %73 = "arith.cmpf"(%72, %2) <{fastmath = #arith.fastmath<none>, predicate = 4 : i64}> : (f64, f64) -> i1
     %74 = "arith.negf"(%72) <{fastmath = #arith.fastmath<none>}> : (f64) -> f64
     %75 = "arith.select"(%73, %74, %72) : (i1, f64, f64) -> f64
@@ -167,6 +167,6 @@
     %98 = "arith.mulf"(%67, %80) <{fastmath = #arith.fastmath<none>}> : (f64, f64) -> f64
     %99 = "tensor.insert"(%98, %97, %3, %3) : (f64, tensor<3x3xf64>, index, index) -> tensor<3x3xf64>
     "func.return"(%27, %99) : (f64, tensor<3x3xf64>) -> ()
-  }) : () -> ()
+  }) {llvm.emit_c_interface} : () -> ()
 }) : () -> ()
 

@@ -8,6 +8,7 @@ set(LIBS
         ${conversion_libs}
         MLIROptLib
         MLIRRelativity
+	MLIRRelAddCInterfacePass
 		MLIRTensorDialect
 		MLIRFuncDialect
 		MLIRMathDialect

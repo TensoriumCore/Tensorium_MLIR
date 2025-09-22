@@ -24,7 +24,7 @@ struct LowerSpatialMetricPattern
     Location loc = op.getLoc();
 
     auto inTy  = dyn_cast<RankedTensorType>(op.getG4().getType());
-    auto outTy = dyn_cast<RankedTensorType>(op.getType()); // op retourne gamma
+    auto outTy = dyn_cast<RankedTensorType>(op.getType()); 
 
     if (!inTy || inTy.getRank() != 2 || inTy.getDimSize(0) != 4 ||
         inTy.getDimSize(1) != 4 || !inTy.getElementType().isF64())

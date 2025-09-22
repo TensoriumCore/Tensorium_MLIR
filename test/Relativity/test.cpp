@@ -23,9 +23,9 @@ DetInvRet DetInvGamma(v4f64 x);
 }
 
 static void printMat3(const char *title, const MemRef3x3F64 &A) {
-  std::printf("%s (sizes=[%ld,%ld], strides=[%ld,%ld])\n", title,
-              (long)A.sizes[0], (long)A.sizes[1], (long)A.strides[0],
-              (long)A.strides[1]);
+  // std::printf("%s (sizes=[%ld,%ld], strides=[%ld,%ld])\n", title,
+  //             (long)A.sizes[0], (long)A.sizes[1], (long)A.strides[0],
+  //             (long)A.strides[1]);
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       long idx = A.offset + i * A.strides[0] + j * A.strides[1];
