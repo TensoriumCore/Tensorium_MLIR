@@ -58,7 +58,6 @@ int main(int argc, char *argv[]) {
             math = math.substr(start, finish - start + 1);
     }
 
-
 	std::vector<std::shared_ptr<tensorium::ASTNode>> all_asts;
 	for (const auto &math : blocks) {
 		Lexer lexer(math);
@@ -80,7 +79,6 @@ int main(int argc, char *argv[]) {
 			all_asts.push_back(root);
 		}
 	}
-
 
 	if (mode == "--mlir")
 		Tensorium::generate_lowered_mlir(all_asts);
