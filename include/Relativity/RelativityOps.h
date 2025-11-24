@@ -7,6 +7,7 @@
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
+#include "mlir/IR/OpImplementation.h"             // Pour assemblyFormat / OpAsmOpInterface
 
 namespace mlir {
 namespace relativity {

@@ -30,6 +30,7 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
   });
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelExtractSpatialPass();
-	});
+  });
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelLinAlgLowerPass();
   });
@@ -56,9 +57,8 @@ int main(int argc, char **argv) {
   });
 
   mlir::DialectRegistry registry;
-  mlir::registerAllDialects(registry); 
+  mlir::registerAllDialects(registry);
   registry.insert<mlir::relativity::RelativityDialect>();
-
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Relativity optimizer driver\n", registry));

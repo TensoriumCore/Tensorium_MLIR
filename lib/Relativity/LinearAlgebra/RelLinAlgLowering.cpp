@@ -53,12 +53,10 @@ struct Det3x3Lower : OpRewritePattern<mlir::relativity::Det3x3Op> {
     };
     auto neg = [&](Value x) { return rw.create<arith::NegFOp>(loc, x); };
 
-    // Cofactors for row 0
     Value C00 = sub(mul(a11, a22), mul(a12, a21));      //  e*i - f*h
     Value C01 = neg(sub(mul(a10, a22), mul(a12, a20))); // -(d*i - f*g)
     Value C02 = sub(mul(a10, a21), mul(a11, a20));      //  d*h - e*g
 
-    // det = a00*C00 + a01*C01 + a02*C02
     Value det = add(add(mul(a00, C00), mul(a01, C01)), mul(a02, C02));
     rw.replaceOp(op, det);
     return success();

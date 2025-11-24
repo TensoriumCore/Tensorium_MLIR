@@ -83,19 +83,23 @@ def MetricTensorOp : Relativity_Op<"metric_tensor", [Pure]> {
   }];
 }
 
-def Relativity_MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
-  let summary = "Build g_{μν} for a named metric at a spacetime point";
-  let hasVerifier = 1;
+def MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
+  let summary = "Get ADM decomposition (Alpha, Beta, Gamma) for a metric";
+  let description = [{
+    Returns the 3+1 ADM variables for a given coordinate tensor.
+    Outputs:
+    - Alpha: Lapse (Scalar field)
+    - Beta: Shift (Vector field)
+    - Gamma: Spatial Metric (Tensor field)
+  }];
 
-  let arguments = (ins
-    StrAttr:$name,
-    OptionalAttr<DictionaryAttr>:$params,
-    AnyType:$x
-  );
-  let results = (outs RankedTensorOf<[F64]>:$g);
+  let hasVerifier = 1;
+  let arguments = (ins StrAttr:$name, DictionaryAttr:$params, AnyRankedTensor:$x);
+
+  let results = (outs AnyRankedTensor:$alpha, AnyRankedTensor:$beta, AnyRankedTensor:$gamma);
 
   let assemblyFormat = [{
-    $name (` ` $params^)? $x `:` type($x) `->` type($g) attr-dict
+    $name `params` `=` $params `(` $x `)` attr-dict `:` type($x) `->` `(` type($alpha) `,` type($beta) `,` type($gamma) `)`
   }];
 }
 

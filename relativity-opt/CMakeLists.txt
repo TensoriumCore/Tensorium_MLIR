@@ -12,6 +12,7 @@ set(LIBS
 		MLIRFuncDialect
 		MLIRMathDialect
 		MLIRArithDialect
+		MLIRAffineDialect
 	)
 	add_llvm_executable(relativity-opt relativity-opt.cpp)
 	llvm_update_compile_flags(relativity-opt)

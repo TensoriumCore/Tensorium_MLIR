@@ -1,14 +1,22 @@
 #include "Relativity/RelativityOps.h"
 #include "Relativity/RelativityDialect.h"
+#include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpImplementation.h"
+#include "mlir/IR/TypeUtilities.h"
 #include "llvm/Support/Casting.h"
 
 using namespace mlir;
 using namespace mlir::relativity;
 
+void RelativityDialect::initialize() {
+  addOperations<
+#define GET_OP_LIST
+#include "Relativity/RelativityOps.cpp.inc"
+      >();
+}
+
 LogicalResult CreateConformalMetricOp::verify() {
-  llvm::errs() << "VERIFICATION CALLED!\n";
   auto type = getGammaIj().getType();
   auto tensorType = llvm::dyn_cast<RankedTensorType>(type);
   if (!tensorType || tensorType.getRank() != 2) {
@@ -17,7 +25,6 @@ LogicalResult CreateConformalMetricOp::verify() {
   if (tensorType.getShape() != ArrayRef<int64_t>({3, 3})) {
     return emitOpError("gamma_ij must have shape 3x3");
   }
-  llvm::errs() << "VERIFICATION PASSED!\n";
   return success();
 }
 
@@ -28,30 +35,32 @@ void CreateConformalMetricOp::build(OpBuilder &builder, OperationState &state,
   state.addTypes({tensorType});
 }
 
-static LogicalResult isVec4F64(Type ty) {
-  if (auto vt = dyn_cast<VectorType>(ty))
-    return (vt.getRank() == 1 && vt.getShape()[0] == 4 &&
-            vt.getElementType().isF64())
-               ? success()
-               : failure();
-  if (auto rt = dyn_cast<RankedTensorType>(ty))
-    return (rt.getRank() == 1 && rt.getShape()[0] == 4 &&
-            rt.getElementType().isF64())
-               ? success()
-               : failure();
-  return failure();
-}
+mlir::LogicalResult MetricGetOp::verify() {
+  auto inputType = llvm::cast<RankedTensorType>(getX().getType());
+  auto alphaType = llvm::cast<RankedTensorType>(getAlpha().getType());
+  auto betaType = llvm::cast<RankedTensorType>(getBeta().getType());
+  auto gammaType = llvm::cast<RankedTensorType>(getGamma().getType());
 
-LogicalResult MetricGetOp::verify() {
-  if (failed(isVec4F64(getX().getType())))
-    return emitOpError() << "expects x to be vector<4xf64> or tensor<4xf64>";
+  ArrayRef<int64_t> inShape = inputType.getShape();
+  if (inShape.size() < 1 || inShape.back() != 4)
+    return emitOpError("input last dim must be 4");
 
-  auto gTy = dyn_cast<RankedTensorType>(getG().getType());
-  if (!gTy || gTy.getRank() != 2 || gTy.getShape()[0] != 4 ||
-      gTy.getShape()[1] != 4 || !gTy.getElementType().isF64())
-    return emitOpError() << "expects result type tensor<4x4xf64>";
+  ArrayRef<int64_t> gridShape = inShape.drop_back();
+  if (alphaType.getShape() != gridShape)
+    return emitOpError("alpha output shape mismatch");
 
-  return success();
+  SmallVector<int64_t> expectedBeta(gridShape.begin(), gridShape.end());
+  expectedBeta.push_back(3);
+  if (betaType.getShape() != ArrayRef<int64_t>(expectedBeta))
+    return emitOpError("beta output shape mismatch");
+
+  SmallVector<int64_t> expectedGamma(gridShape.begin(), gridShape.end());
+  expectedGamma.push_back(3);
+  expectedGamma.push_back(3);
+  if (gammaType.getShape() != ArrayRef<int64_t>(expectedGamma))
+    return emitOpError("gamma output shape mismatch");
+
+  return mlir::success();
 }
 
 #define GET_OP_CLASSES
