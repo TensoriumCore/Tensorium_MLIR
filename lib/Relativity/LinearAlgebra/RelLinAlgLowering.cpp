@@ -29,11 +29,16 @@ struct Det3x3Lower : OpRewritePattern<mlir::relativity::Det3x3Op> {
     Location loc = op.getLoc();
     Value A = op.getA();
 
+    // Row 0
     Value a00 = getA(rw, loc, A, 0, 0);
     Value a01 = getA(rw, loc, A, 0, 1);
     Value a02 = getA(rw, loc, A, 0, 2);
+    // Row 1
+    Value a10 = getA(rw, loc, A, 1, 0);
     Value a11 = getA(rw, loc, A, 1, 1);
     Value a12 = getA(rw, loc, A, 1, 2);
+    // Row 2
+    Value a20 = getA(rw, loc, A, 2, 0);
     Value a21 = getA(rw, loc, A, 2, 1);
     Value a22 = getA(rw, loc, A, 2, 2);
 
@@ -46,11 +51,14 @@ struct Det3x3Lower : OpRewritePattern<mlir::relativity::Det3x3Op> {
     auto sub = [&](Value x, Value y) {
       return rw.create<arith::SubFOp>(loc, x, y);
     };
+    auto neg = [&](Value x) { return rw.create<arith::NegFOp>(loc, x); };
 
-    Value C00 = sub(mul(a11, a22), mul(a12, a21));
-    Value C01 = sub(mul(a02, a21), mul(a01, a22)); // = -(a01*a22 - a02*a21)
-    Value C02 = sub(mul(a01, a12), mul(a02, a11));
+    // Cofactors for row 0
+    Value C00 = sub(mul(a11, a22), mul(a12, a21));      //  e*i - f*h
+    Value C01 = neg(sub(mul(a10, a22), mul(a12, a20))); // -(d*i - f*g)
+    Value C02 = sub(mul(a10, a21), mul(a11, a20));      //  d*h - e*g
 
+    // det = a00*C00 + a01*C01 + a02*C02
     Value det = add(add(mul(a00, C00), mul(a01, C01)), mul(a02, C02));
     rw.replaceOp(op, det);
     return success();

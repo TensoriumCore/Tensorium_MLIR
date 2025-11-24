@@ -16,11 +16,11 @@ struct DetInvRet {
   MemRef3x3F64 inv;
 };
 
-using v4f64 = double __attribute__((vector_size(32)));
-
 extern "C" {
-void _mlir_ciface_SchwarzschildSpatial(MemRef3x3F64 *out, v4f64 x);
-void _mlir_ciface_DetInvGamma(DetInvRet *out, v4f64 x);
+  void _mlir_ciface_SchwarzschildSpatial(MemRef3x3F64 *out,
+                                         double t, double x, double y, double z);
+  void _mlir_ciface_DetInvGamma(DetInvRet *out,
+                                double t, double x, double y, double z);
 }
 
 static inline long idx_of(const MemRef3x3F64 &A, int i, int j) {
@@ -55,18 +55,21 @@ static double matmul_max_err_I3(const MemRef3x3F64 &A,
   return maxe;
 }
 
+
+
+
 int main() {
-  v4f64 X = {0.0, 1.0, 1.0, 1.0};
+  double t = 0.0, x = 1.0, y = 1.0, z = 1.0;
 
   std::printf("Testing Schwarzschild spatial metric at:\n");
-  std::printf("X = [%.16e, %.16e, %.16e, %.16e]\n\n", X[0], X[1], X[2], X[3]);
+  std::printf("X = [%.16e, %.16e, %.16e, %.16e]\n\n", t, x, y, z);
 
   MemRef3x3F64 gamma{};
-  _mlir_ciface_SchwarzschildSpatial(&gamma, X);
+  _mlir_ciface_SchwarzschildSpatial(&gamma, t, x, y, z);
   printMat3("gamma (spatial metric)", gamma);
 
   DetInvRet di{};
-  _mlir_ciface_DetInvGamma(&di, X);
+  _mlir_ciface_DetInvGamma(&di, t, x, y, z);
   std::printf("\ndet(gamma) = %.16e\n\n", di.det);
   printMat3("gamma^{-1} (inverse)", di.inv);
 
@@ -77,3 +80,4 @@ int main() {
   std::free(di.inv.allocated);
   return 0;
 }
+

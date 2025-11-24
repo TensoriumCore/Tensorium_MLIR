@@ -30,5 +30,5 @@ target_include_directories(MLIRRelativity PRIVATE
   ${CMAKE_SOURCE_DIR}/Tensorium_Tex/lib/Frontend
 )
 
-# add_subdirectory(LinearAlgebra)
+add_subdirectory(LinearAlgebra)
 add_subdirectory(RelAddCInterfacePass)
