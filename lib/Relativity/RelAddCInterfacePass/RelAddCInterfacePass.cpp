@@ -44,7 +44,6 @@ struct RelAddCInterfacePass
       if (llvm::any_of(f.getFunctionType().getInputs(), isVec4F64))
         toProcess.push_back(f);
       else {
-        // cas simple : juste forcer public + emit_c_interface
         f.setSymVisibilityAttr(StringAttr::get(ctx, "public"));
         if (!f->hasAttr("llvm.emit_c_interface"))
           f->setAttr("llvm.emit_c_interface", UnitAttr::get(ctx));
@@ -55,14 +54,12 @@ struct RelAddCInterfacePass
       Location loc = f.getLoc();
       b.setInsertionPoint(f);
 
-      // renommer en _impl et rendre privé
       std::string implName = (f.getName() + "_impl").str();
       f.setName(implName);
       f.setSymVisibility("private");
 
       FunctionType oldTy = f.getFunctionType();
 
-      // construire la nouvelle signature : vector<4xf64> -> memref<4xf64>
       SmallVector<Type> inTys;
       SmallVector<bool> wasVec;
       for (Type t : oldTy.getInputs()) {
@@ -76,7 +73,6 @@ struct RelAddCInterfacePass
       }
       auto newTy = b.getFunctionType(inTys, oldTy.getResults());
 
-      // wrapper avec le nom original
       auto wrapper = b.create<FuncOp>(loc, implName.substr(
                                           0, implName.size() - 5), // supprime _impl
                                       newTy);
