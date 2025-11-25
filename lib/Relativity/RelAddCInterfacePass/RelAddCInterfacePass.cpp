@@ -74,7 +74,7 @@ struct RelAddCInterfacePass
       auto newTy = b.getFunctionType(inTys, oldTy.getResults());
 
       auto wrapper = b.create<FuncOp>(loc, implName.substr(
-                                          0, implName.size() - 5), // supprime _impl
+                                          0, implName.size() - 5),
                                       newTy);
       wrapper.setSymVisibility("public");
       wrapper->setAttr("llvm.emit_c_interface", UnitAttr::get(ctx));
