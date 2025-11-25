@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.13.4)
 
-# CMP0116: Ninja generators transform `DEPFILE`s from `add_custom_command()`
-# New in CMake 3.20. https://cmake.org/cmake/help/latest/policy/CMP0116.html
 if(POLICY CMP0116)
   cmake_policy(SET CMP0116 OLD)
 endif()
@@ -38,9 +36,9 @@ add_definitions(${LLVM_DEFINITIONS})
 set(LLVM_LIT_ARGS "-sv" CACHE STRING "lit default options")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(sanitizers)
-
+enable_testing()
 add_subdirectory(include)
 add_subdirectory(lib)
-# add_subdirectory(test)
+add_subdirectory(test)
 add_subdirectory(relativity-opt)
 add_subdirectory(Tensorium_Tex)
