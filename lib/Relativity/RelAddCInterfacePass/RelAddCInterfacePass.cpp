@@ -79,7 +79,6 @@ struct RelAddCInterfacePass
       wrapper.setSymVisibility("public");
       wrapper->setAttr("llvm.emit_c_interface", UnitAttr::get(ctx));
 
-      // construire le corps du wrapper
       Block *entry = wrapper.addEntryBlock();
       b.setInsertionPointToStart(entry);
 
