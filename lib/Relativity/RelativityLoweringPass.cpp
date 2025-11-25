@@ -25,8 +25,8 @@ std::vector<Token> tokenize(const std::string &input) {
   Lexer lexer(input);
   return lexer.tokenize();
 }
-
 } // namespace tensorium
+
 Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter,
                     mlir::Location loc, const SmallVector<Value> &inputs) {
   if (name == "M")
@@ -52,6 +52,7 @@ Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter,
     Value sum = rewriter.create<arith::AddFOp>(loc, r2, a2_cos2);
     return rewriter.create<math::SqrtOp>(loc, sum);
   }
+
   if (name == "Delta") {
     Value r = inputs[4];
     Value M = inputs[0];
@@ -106,6 +107,7 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
           hasExpVal = true;
         }
       }
+
       if (!hasExpVal) {
         if (auto negOp = rhs.getDefiningOp<arith::NegFOp>()) {
           auto operand = negOp.getOperand();
@@ -182,12 +184,12 @@ struct MetricComponentLowering
                                 PatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
     ValueRange inputs = op.getOperands();
-
     auto attr = op->getAttrOfType<StringAttr>("formula");
     std::string str = attr.getValue().str();
     auto tokens = tensorium::tokenize(str);
     tensorium::Parser parser(tokens);
     auto stmts = parser.parse_statements();
+
     if (stmts.empty())
       return rewriter.notifyMatchFailure(op, "could not parse formula");
     auto ast = stmts.front();
@@ -208,7 +210,6 @@ struct MetricTensorLowering
     auto rankedTy = llvm::dyn_cast<mlir::RankedTensorType>(rawTy);
     assert(rankedTy && "expected RankedTensorType");
     Type elemTy = rankedTy.getElementType();
-
     ValueRange in = op.getOperands();
 
     SmallVector<Value, 5> args;
@@ -246,6 +247,7 @@ struct LowerRelativityPass
     getContext().getOrLoadDialect<mlir::tensor::TensorDialect>();
     getContext().getOrLoadDialect<mlir::math::MathDialect>();
     auto module = getOperation();
+
     if (!module.lookupSymbol<func::FuncOp>("metric_component_impl")) {
       OpBuilder b(&getContext());
       b.setInsertionPointToStart(module.getBody());

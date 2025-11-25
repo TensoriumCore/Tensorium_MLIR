@@ -111,7 +111,6 @@ void buildSchwarzschildMetricValues(OpBuilder &rewriter, Location loc, Value t,
   auto cstM =
       rewriter.create<arith::ConstantFloatOp>(loc, llvm::APFloat(M), f64);
 
-  // Calcul de r
   auto x2 = rewriter.create<arith::MulFOp>(loc, x, x);
   auto y2 = rewriter.create<arith::MulFOp>(loc, y, y);
   auto z2 = rewriter.create<arith::MulFOp>(loc, z, z);

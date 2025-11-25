@@ -11,14 +11,11 @@
 #include <string>
 
 using namespace mlir;
-
 namespace {
-
 struct RelativitySimplifyPass
     : public PassWrapper<RelativitySimplifyPass, OperationPass<ModuleOp>> {
   void runOnOperation() override {
     ModuleOp module = getOperation();
-
     static const std::regex fracRe(R"(\\?frac\{([^\}]*)\}\{([^\}]*)\})");
     static const std::regex fracSimpleRe(
         R"(\\?frac([a-zA-Z0-9^_]+)([a-zA-Z0-9^_]+))");
@@ -28,7 +25,6 @@ struct RelativitySimplifyPass
       if (auto metric = dyn_cast<relativity::MetricComponentOp>(op)) {
         if (auto attr = metric->getAttrOfType<StringAttr>("formula")) {
           std::string f = attr.getValue().str();
-
           f = std::regex_replace(f, fracRe, "($1)/($2)");
           f = std::regex_replace(f, fracSimpleRe, "($1)/($2)");
           f = std::regex_replace(f, expRe, "^$1");
@@ -44,7 +40,6 @@ struct RelativitySimplifyPass
       }
     });
   }
-
   StringRef getArgument() const final { return "relativity-simplify"; }
   StringRef getDescription() const final {
     return "Cleans up LaTeX fractions, exponents, and curly braces in metric "
@@ -55,10 +50,8 @@ struct RelativitySimplifyPass
 
 namespace mlir {
 namespace relativity {
-
 std::unique_ptr<Pass> createRelativitySimplifyPass() {
   return std::make_unique<RelativitySimplifyPass>();
 }
-
 } // namespace relativity
 } // namespace mlir

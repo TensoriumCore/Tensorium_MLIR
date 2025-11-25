@@ -21,6 +21,7 @@ struct LowerSpatialMetricPattern
     Value g = op.getG4();
     auto inTy = dyn_cast<RankedTensorType>(g.getType());
     auto outTy = dyn_cast<RankedTensorType>(op.getType());
+
     if (!inTy || !outTy || !inTy.getElementType().isF64() ||
         !outTy.getElementType().isF64())
       return rewriter.notifyMatchFailure(op, "expected ranked f64 tensors");
@@ -72,6 +73,7 @@ struct CompactExtracted3x3From4x4Pattern
 
     auto srcTy = dyn_cast<RankedTensorType>(op.getSource().getType());
     auto resTy = dyn_cast<RankedTensorType>(op.getType());
+
     if (!srcTy || !resTy)
       return failure();
     if (srcTy.getRank() != 2 || resTy.getRank() != 2)
@@ -96,6 +98,7 @@ struct CompactExtracted3x3From4x4Pattern
     auto copy =
         rewriter.create<linalg::CopyOp>(loc, rebuilt.getResult(), empty3);
     Value dense = copy.getResult(0);
+		
     if (dense.getType() != resTy)
       dense = rewriter.create<tensor::CastOp>(loc, resTy, dense);
 
@@ -106,15 +109,19 @@ struct CompactExtracted3x3From4x4Pattern
 struct RelExtractSpatialPass
     : PassWrapper<RelExtractSpatialPass, OperationPass<ModuleOp>> {
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(RelExtractSpatialPass)
+
   StringRef getArgument() const final { return "rel-extract-spatial"; }
+
   StringRef getDescription() const final {
     return "Make 3x3 spatial metric tensors compact (via linalg.copy) whether "
            "coming from the custom op or from a 4x4 slice";
   }
+
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<arith::ArithDialect, tensor::TensorDialect,
                     linalg::LinalgDialect>();
   }
+
   void runOnOperation() override {
     RewritePatternSet patterns(&getContext());
     patterns.add<LowerSpatialMetricPattern>(&getContext());
@@ -124,7 +131,6 @@ struct RelExtractSpatialPass
     (void)applyPatternsGreedily(getOperation(), std::move(patterns), cfg);
   }
 };
-
 } // namespace
 
 std::unique_ptr<mlir::Pass> mlir::relativity::createRelExtractSpatialPass() {

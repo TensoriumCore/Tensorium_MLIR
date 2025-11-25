@@ -9,13 +9,14 @@
 using namespace mlir;
 using namespace mlir::relativity;
 
-
 LogicalResult CreateConformalMetricOp::verify() {
   auto type = getGammaIj().getType();
   auto tensorType = llvm::dyn_cast<RankedTensorType>(type);
+
   if (!tensorType || tensorType.getRank() != 2) {
     return emitOpError("gamma_ij must be a rank-2 tensor");
   }
+
   if (tensorType.getShape() != ArrayRef<int64_t>({3, 3})) {
     return emitOpError("gamma_ij must have shape 3x3");
   }
@@ -51,6 +52,7 @@ mlir::LogicalResult MetricGetOp::verify() {
   SmallVector<int64_t> expectedGamma(gridShape.begin(), gridShape.end());
   expectedGamma.push_back(3);
   expectedGamma.push_back(3);
+
   if (gammaType.getShape() != ArrayRef<int64_t>(expectedGamma))
     return emitOpError("gamma output shape mismatch");
 

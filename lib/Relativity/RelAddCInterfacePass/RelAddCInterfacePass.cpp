@@ -3,8 +3,8 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Attributes.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 
 using namespace mlir;
@@ -73,9 +73,8 @@ struct RelAddCInterfacePass
       }
       auto newTy = b.getFunctionType(inTys, oldTy.getResults());
 
-      auto wrapper = b.create<FuncOp>(loc, implName.substr(
-                                          0, implName.size() - 5),
-                                      newTy);
+      auto wrapper =
+          b.create<FuncOp>(loc, implName.substr(0, implName.size() - 5), newTy);
       wrapper.setSymVisibility("public");
       wrapper->setAttr("llvm.emit_c_interface", UnitAttr::get(ctx));
 
@@ -84,8 +83,8 @@ struct RelAddCInterfacePass
 
       SmallVector<Value> callArgs;
       Value c0 = b.create<arith::ConstantIndexOp>(loc, 0);
-      Value zero = b.create<arith::ConstantOp>(loc, b.getF64Type(),
-                                               b.getFloatAttr(b.getF64Type(), 0.0));
+      Value zero = b.create<arith::ConstantOp>(
+          loc, b.getF64Type(), b.getFloatAttr(b.getF64Type(), 0.0));
       for (auto [arg, was] : llvm::zip(entry->getArguments(), wasVec)) {
         if (!was) {
           callArgs.push_back(arg);
