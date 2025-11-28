@@ -83,25 +83,41 @@ def MetricTensorOp : Relativity_Op<"metric_tensor", [Pure]> {
   }];
 }
 
+
 def MetricGetOp : Relativity_Op<"metric.get", [Pure]> {
   let summary = "Get ADM decomposition (Alpha, Beta, Gamma) for a metric";
   let description = [{
     Returns the 3+1 ADM variables for a given coordinate tensor.
     Outputs:
-    - Alpha: Lapse (Scalar field)
-    - Beta: Shift (Vector field)
-    - Gamma: Spatial Metric (Tensor field)
+      - Alpha: lapse
+      - Beta: shift
+      - Gamma: spatial 3×3 metric
   }];
 
   let hasVerifier = 1;
-  let arguments = (ins StrAttr:$name, DictionaryAttr:$params, AnyRankedTensor:$x);
 
-  let results = (outs AnyRankedTensor:$alpha, AnyRankedTensor:$beta, AnyRankedTensor:$gamma);
+  let arguments = (ins
+    StrAttr:$name,
+    OptionalAttr<DictionaryAttr>:$params,
+    AnyRankedTensor:$x
+  );
+
+  let results = (outs
+    AnyRankedTensor:$alpha,
+    AnyRankedTensor:$beta,
+    AnyRankedTensor:$gamma
+  );
 
   let assemblyFormat = [{
-    $name `params` `=` $params `(` $x `)` attr-dict `:` type($x) `->` `(` type($alpha) `,` type($beta) `,` type($gamma) `)`
+    $name
+    (`params` `=` $params^)?
+    `(` $x `)`
+    attr-dict
+    `:` type($x)
+    `->` `(` type($alpha) `,` type($beta) `,` type($gamma) `)`
   }];
 }
+
 
 def Relativity_SpatialMetricOp : Relativity_Op<"metric.spatial", [Pure]> {
   let summary = "Extract spatial 3×3 metric γ_ij from 4×4 g_{μν}";

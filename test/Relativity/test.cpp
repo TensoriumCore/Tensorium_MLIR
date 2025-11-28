@@ -1,83 +1,135 @@
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-struct MemRef3x3F64 {
+typedef struct {
+  double *allocated;
+  double *aligned;
+  int64_t offset;
+  int64_t sizes[1];
+  int64_t strides[1];
+} MemRef1DF64;
+
+typedef struct {
   double *allocated;
   double *aligned;
   int64_t offset;
   int64_t sizes[2];
   int64_t strides[2];
-};
+} MemRef2DF64;
 
-struct DetInvRet {
-  double det;
-  MemRef3x3F64 inv;
-};
+typedef struct {
+  double *allocated;
+  double *aligned;
+  int64_t offset;
+  int64_t sizes[3];
+  int64_t strides[3];
+} MemRef3DF64;
 
-extern "C" {
-  void _mlir_ciface_SchwarzschildSpatial(MemRef3x3F64 *out,
-                                         double t, double x, double y, double z);
-  void _mlir_ciface_DetInvGamma(DetInvRet *out,
-                                double t, double x, double y, double z);
+typedef struct {
+  MemRef1DF64 alpha;
+  MemRef2DF64 beta;
+  MemRef3DF64 gamma;
+} GridMetric1DRet;
+
+extern "C" void _mlir_ciface_GridMetric1D(GridMetric1DRet *out,
+                                          MemRef2DF64 *coords);
+static inline int64_t idx1(const MemRef1DF64 &A, int i) {
+  return A.offset + i * A.strides[0];
 }
 
-static inline long idx_of(const MemRef3x3F64 &A, int i, int j) {
-  return A.offset + (long)i * A.strides[0] + (long)j * A.strides[1];
+static inline int64_t idx2(const MemRef2DF64 &A, int i, int j) {
+  return A.offset + i * A.strides[0] + j * A.strides[1];
 }
 
-static void printMat3(const char *title, const MemRef3x3F64 &A) {
-  std::printf("%s (sizes=[%ld,%ld], strides=[%ld,%ld], offset=%ld)\n",
-              title, (long)A.sizes[0], (long)A.sizes[1],
-              (long)A.strides[0], (long)A.strides[1], (long)A.offset);
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      std::printf(" % .16e", A.aligned[idx_of(A, i, j)]);
-    }
-    std::puts("");
+static inline int64_t idx3(const MemRef3DF64 &A, int i, int j, int k) {
+  return A.offset + i * A.strides[0] + j * A.strides[1] + k * A.strides[2];
+}
+
+void printAlpha(const MemRef1DF64 &A) {
+  printf("alpha:\n");
+  for (int i = 0; i < A.sizes[0]; i++)
+    printf("  [%2d] %.10f\n", i, A.aligned[idx1(A, i)]);
+}
+
+void printCoords(const MemRef2DF64 &C) {
+  printf("coords (t, x, y, z):\n");
+  for (int i = 0; i < C.sizes[0]; i++) {
+    double t = C.aligned[idx2(C, i, 0)];
+    double x = C.aligned[idx2(C, i, 1)];
+    double y = C.aligned[idx2(C, i, 2)];
+    double z = C.aligned[idx2(C, i, 3)];
+    printf("  [%2d] (%.10f, %.10f, %.10f, %.10f)\n", i, t, x, y, z);
+  }
+  printf("\n");
+}
+void printBeta(const MemRef2DF64 &B) {
+  printf("beta:\n");
+  for (int i = 0; i < B.sizes[0]; i++) {
+    double bx = B.aligned[idx2(B, i, 0)];
+    double by = B.aligned[idx2(B, i, 1)];
+    double bz = B.aligned[idx2(B, i, 2)];
+    printf("  [%2d] [%.10f %.10f %.10f]\n", i, bx, by, bz);
   }
 }
 
-static double matmul_max_err_I3(const MemRef3x3F64 &A,
-                                const MemRef3x3F64 &B) {
-  double maxe = 0.0;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      double s = 0.0;
-      for (int k = 0; k < 3; ++k)
-        s += A.aligned[idx_of(A, i, k)] * B.aligned[idx_of(B, k, j)];
-      double target = (i == j) ? 1.0 : 0.0;
-      double e = std::fabs(s - target);
-      if (e > maxe) maxe = e;
+void printGamma(const MemRef3DF64 &G) {
+  printf("gamma:\n");
+  for (int p = 0; p < G.sizes[0]; p++) {
+    printf("  [%2d]\n", p);
+    for (int i = 0; i < 3; i++) {
+      printf("       ");
+      for (int j = 0; j < 3; j++)
+        printf(" %.10f", G.aligned[idx3(G, p, i, j)]);
+      printf("\n");
     }
   }
-  return maxe;
 }
+MemRef2DF64 make_coords() {
+  MemRef2DF64 A;
+  const int H = 10, W = 4;
 
+  A.sizes[0] = H;
+  A.sizes[1] = W;
+  A.strides[1] = 1;
+  A.strides[0] = W;
+  A.offset = 0;
 
+  size_t nbytes = H * W * sizeof(double);
 
+  void *ptr = nullptr;
+  if (posix_memalign(&ptr, 64, nbytes) != 0) {
+    fprintf(stderr, "posix_memalign failed\n");
+    exit(1);
+  }
+  A.allocated = (double *)ptr;
+  A.aligned = A.allocated;
+
+  for (int i = 0; i < H; i++) {
+    A.aligned[i * W + 0] = 0.0;
+    A.aligned[i * W + 1] = 1.0 + 0.1 * i;
+    A.aligned[i * W + 2] = 1.0;
+    A.aligned[i * W + 3] = 1.0;
+  }
+  return A;
+}
 
 int main() {
-  double t = 0.0, x = 1.0, y = 1.0, z = 1.0;
 
-  std::printf("Testing Schwarzschild spatial metric at:\n");
-  std::printf("X = [%.16e, %.16e, %.16e, %.16e]\n\n", t, x, y, z);
+  MemRef2DF64 coords = make_coords();
+  GridMetric1DRet out;
 
-  MemRef3x3F64 gamma{};
-  _mlir_ciface_SchwarzschildSpatial(&gamma, t, x, y, z);
-  printMat3("gamma (spatial metric)", gamma);
+  _mlir_ciface_GridMetric1D(&out, &coords);
+  printf("Schwarzschild KS 3+1 decomposition\n\n");
+  printCoords(coords);
+  printAlpha(out.alpha);
+  printBeta(out.beta);
+  printGamma(out.gamma);
 
-  DetInvRet di{};
-  _mlir_ciface_DetInvGamma(&di, t, x, y, z);
-  std::printf("\ndet(gamma) = %.16e\n\n", di.det);
-  printMat3("gamma^{-1} (inverse)", di.inv);
+  free(coords.allocated);
+  free(out.alpha.allocated);
+  free(out.beta.allocated);
+  free(out.gamma.allocated);
 
-  double maxErr = matmul_max_err_I3(gamma, di.inv);
-  std::printf("\nmax|gamma*inv - I| = %.3e\n", maxErr);
-
-  std::free(gamma.allocated);
-  std::free(di.inv.allocated);
   return 0;
 }
-
