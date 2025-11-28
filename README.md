@@ -110,7 +110,6 @@ with Context() as ctx:
     relativity.register_dialect(ctx)
     relativity.register_passes()
 
-    // This is a simple exemple
     module = Module.parse(r"""
       module {
         func.func @GridMetric1D(%coords: tensor<10x4xf64>)
