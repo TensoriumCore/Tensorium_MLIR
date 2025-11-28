@@ -81,7 +81,10 @@ The underlying MLIR pipeline (dialect → lowering → LLVM) is fully internal.
 ### Example: evaluate 3+1 quantities on 1D/2D/3D grids
 
 ```bash
-python3.13 ./test/Relativity/test_python_binding.py
+python3.13 test/Relativity/test_python_binding.py  > lowered_grid.mlir
+mlir-translate --mlir-to-llvmir lowered_grid.mlir > lowered_grid.ll
+clang++ -c lowered_grid.ll -o grid_metric.o -O3
+clang++ test/Relativity/test_grid_cpp.cpp grid_metric.o -o test_grid -lm -O3 -std=c++17
 ```
 
 This script:
