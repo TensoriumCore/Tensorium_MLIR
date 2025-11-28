@@ -21,9 +21,9 @@ This is currently a proof of concept, only compile on LLVM 20!! . The system ext
 
 ## Goals
 
-- [x] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
+- [~] Parse LaTeX-formatted metrics (e.g. Schwarzschild, Kerr-Schild, FLRW)
 - [x] Generate metric MLIR dialect (still in progress)
-- [ ] Lowerging metric dialect to be compiled
+- [x] Lowerging metric dialect to be compiled
 - [ ] Support symbolic derivation of Christoffel, Ricci, and Riemann tensors
 - [ ] Provide clean initial data for BSSN-based codes
 - [ ] Integrate with Tensorium for runtime execution and benchmarking
@@ -68,8 +68,83 @@ You can now configure Tensorium_MLIR:
 ## build
 
 ```bash
-mkdir build && cd build && cmake .. && make -j
+cmake -G Ninja -B build -DMLIR_ENABLE_BINDINGS_PYTHON=ON .
+ninja -C build
 ```
+
+## Python API
+
+Tensorium-MLIR exposes a compact, high-level Python API allowing users to
+evaluate relativistic metrics on arbitrary grids.
+The underlying MLIR pipeline (dialect → lowering → LLVM) is fully internal.
+
+### Example: evaluate 3+1 quantities on 1D/2D/3D grids
+
+```bash
+python3.13 ./test/Relativity/test_python_binding.py
+```
+
+This script:
+
+1. Defines several grid geometries (1D, 2D, 3D)
+2. Builds a `relativity.metric.get` operation for the Schwarzschild metric
+3. Runs the custom MLIR pass pipeline:
+
+   * `rel-expand-metric`
+   * linear algebra lowering
+   * bufferization
+   * vector/memref/arith → LLVM lowering
+
+### Example (Python)
+
+```python
+from mlir.ir import *
+from mlir.passmanager import PassManager
+from mlir.dialects import relativity
+
+
+pipeline = """
+builtin.module(Passes)
+"""
+with Context() as ctx:
+    relativity.register_dialect(ctx)
+    relativity.register_passes()
+
+    // This is a simple exemple
+    module = Module.parse(r"""
+      module {
+        func.func @GridMetric1D(%coords: tensor<10x4xf64>)
+          -> (tensor<10xf64>, tensor<10x3xf64>, tensor<10x3x3xf64>) {
+          %alpha, %beta, %gamma =
+            relativity.metric.get "schwarzschild_ks"
+              params = {M = 1.0 : f64}(%coords)
+              : tensor<10x4xf64>
+                -> (tensor<10xf64>, tensor<10x3xf64>, tensor<10x3x3xf64>)
+          return %alpha, %beta, %gamma :
+            tensor<10xf64>, tensor<10x3xf64>, tensor<10x3x3xf64>
+        }
+    """)
+
+
+    pm = PassManager.parse(pipeline)
+    pm.run(module.operation)
+
+
+    print(module)
+```
+
+### The future internal pipeline (hidden from the user)
+
+```text
+Python API → Relativity Dialect → Dialect Lowering
+  → Tensor + Linalg + MemRef + Vector lowerings
+  → Bufferization
+  → LLVM Dialect
+  → LLVM IR
+  → Execution Engine (JIT) or C wrapper (AOT)
+```
+
+This is completely automated by the library.
 
 ## Describe Metric from dialect
 
@@ -139,64 +214,6 @@ gamma^{-1} (inverse) (sizes=[3,3], strides=[3,1])
  -1.7863279495408194e-01  8.2136720504591820e-01 -1.7863279495408194e-01
  -1.7863279495408194e-01 -1.7863279495408194e-01  8.2136720504591820e-01
 ```
-### Lower to dialect from LaTeX 
-
-To convert LaTeX metric blocks into MLIR or C++ code, simply provide your .tex input to the frontend tool.
-The system will extract and simplify metric components, then emit either "lowered" MLIR, or dialect MLIR for the Tensorium/Relativity dialects.
-Status
-
-This is currently a proof of concept. The system extracts metric tensors from symbolic LaTeX, simplifies them, and emits valid code for use in numerical simulations of general relativity.
-
-
-
-create a ```test.tex``` file with:
-
-```markdown
-$-(1 - \frac{2 M r}{\rho^2}) dt^2$
-$- \frac{4 M a r \sin^2\theta}{\rho^2} dt d\phi$
-$\frac{\rho^2}{\Delta} dr^2$
-$\rho^2 d\theta^2$
-$(r^2 + a^2 + \frac{2 M a^2 r \sin^2\theta}{\rho^2}) \sin^2\theta d\phi^2$
-```
-
-then use ```tensorium-tex``` to parse and convert into a high level MLIR dialect with ```--dialect``` or lowered to low level MLIR with ```--mlir```:
-
-```bash
-./tensorium-tex --dialect/mlir test.tex 
-```
-
-then you can pass it to relativity-opt :
-
-```bash
-./relativity-opt output_symbolic.mlir
-```
-If you want to lower the custom relativity dialect to LLVM IR, you can use the following command:
-
-```bash
-./bin/relativity-opt \
-  --relativity-simplify \
-  --lower-relativity \
-  --assemble-metric-tensor \
-  output_symbolic.mlir -o out.mlir
-```
-
-```bash
-mlir-opt out.mlir \
-  --convert-tensor-to-linalg \
-  --convert-linalg-to-loops \
-  --one-shot-bufferize="allow-return-allocs,bufferize-function-boundaries" \
-  --finalize-memref-to-llvm \
-  --convert-math-to-llvm \
-  --convert-arith-to-llvm \
-  --convert-scf-to-cf \
-  --convert-cf-to-llvm \
-  --convert-func-to-llvm \
-  --reconcile-unrealized-casts \
-  > lowered.mlir
-
-mlir-translate --mlir-to-llvmir lowered.mlir > lowered.ll
-```
-disclamer: atm the lowering pipeline is working but the metric tensor results are not accurate 
 
 ## Citation
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16950267.svg)](https://doi.org/10.5281/zenodo.16950267)

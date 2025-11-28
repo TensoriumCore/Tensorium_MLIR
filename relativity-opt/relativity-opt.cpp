@@ -6,7 +6,7 @@
 #include "../lib/Relativity/RelativityLoweringPass.h"
 #include "../lib/Relativity/RelativitySimplifyPass.h"
 #include "Relativity/RelativityDialect.h"
-#include "Relativity/RelativityOpsDialect.cpp.inc"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -30,12 +30,11 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-    return createLowerRelativityPass();
+    return mlir::relativity::createLowerRelativityPass();
   });
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createAssembleMetricTensorPass();
@@ -55,6 +54,9 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return mlir::relativity::createRelAddCInterfacePass();
   });
+
+  mlir::registerPass(
+      []() { return mlir::relativity::createRelAddCInterfacePass(); });
 
   mlir::DialectRegistry registry;
   mlir::registerAllDialects(registry);

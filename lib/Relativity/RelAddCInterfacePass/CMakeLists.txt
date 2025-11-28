@@ -5,6 +5,6 @@ add_library(MLIRRelAddCInterfacePass
 target_link_libraries(MLIRRelAddCInterfacePass
   PRIVATE
     MLIRFuncDialect
-    MLIRIR
     MLIRPass
+    MLIRIR
 )

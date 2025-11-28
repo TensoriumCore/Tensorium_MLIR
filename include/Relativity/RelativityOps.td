@@ -1,7 +1,7 @@
 #ifndef RELATIVITY_OPS
 #define RELATIVITY_OPS
 
-include "RelativityDialect.td"
+include "Relativity/RelativityDialect.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/DialectBase.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"

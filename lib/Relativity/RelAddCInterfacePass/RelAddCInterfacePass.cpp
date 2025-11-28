@@ -7,8 +7,8 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 
-using namespace mlir;
-using namespace mlir::func;
+namespace mlir {
+namespace relativity {
 
 namespace {
 
@@ -25,8 +25,7 @@ struct RelAddCInterfacePass
 
   StringRef getArgument() const final override { return "rel-add-c-interface"; }
   StringRef getDescription() const final override {
-    return "Ajoute llvm.emit_c_interface aux fonctions exportées et "
-           "wrappe les vector<4xf64> en memref<4xf64> (ABI-safe).";
+    return "Ajoute llvm.emit_c_interface et wrap vector<4xf64> en memref<4xf64>.";
   }
 
   void runOnOperation() override {
@@ -34,13 +33,14 @@ struct RelAddCInterfacePass
     MLIRContext *ctx = module.getContext();
     OpBuilder b(ctx);
 
-    SmallVector<FuncOp> toProcess;
+    SmallVector<func::FuncOp> toProcess;
 
-    module.walk([&](FuncOp f) {
+    module.walk([&](func::FuncOp f) {
       if (f.isExternal())
         return;
       if (f.getSymVisibility() != "public")
         return;
+
       if (llvm::any_of(f.getFunctionType().getInputs(), isVec4F64))
         toProcess.push_back(f);
       else {
@@ -50,7 +50,7 @@ struct RelAddCInterfacePass
       }
     });
 
-    for (FuncOp f : toProcess) {
+    for (func::FuncOp f : toProcess) {
       Location loc = f.getLoc();
       b.setInsertionPoint(f);
 
@@ -62,6 +62,7 @@ struct RelAddCInterfacePass
 
       SmallVector<Type> inTys;
       SmallVector<bool> wasVec;
+
       for (Type t : oldTy.getInputs()) {
         if (isVec4F64(t)) {
           inTys.push_back(MemRefType::get({4}, b.getF64Type()));
@@ -71,10 +72,12 @@ struct RelAddCInterfacePass
           wasVec.push_back(false);
         }
       }
+
       auto newTy = b.getFunctionType(inTys, oldTy.getResults());
 
       auto wrapper =
-          b.create<FuncOp>(loc, implName.substr(0, implName.size() - 5), newTy);
+          b.create<func::FuncOp>(loc, implName.substr(0, implName.size() - 5), newTy);
+
       wrapper.setSymVisibility("public");
       wrapper->setAttr("llvm.emit_c_interface", UnitAttr::get(ctx));
 
@@ -85,8 +88,9 @@ struct RelAddCInterfacePass
       Value c0 = b.create<arith::ConstantIndexOp>(loc, 0);
       Value zero = b.create<arith::ConstantOp>(
           loc, b.getF64Type(), b.getFloatAttr(b.getF64Type(), 0.0));
-      for (auto [arg, was] : llvm::zip(entry->getArguments(), wasVec)) {
-        if (!was) {
+
+      for (auto [arg, wasVecFlag] : llvm::zip(entry->getArguments(), wasVec)) {
+        if (!wasVecFlag) {
           callArgs.push_back(arg);
         } else {
           auto vecTy = VectorType::get({4}, b.getF64Type());
@@ -108,10 +112,13 @@ struct RelAddCInterfacePass
 
 } // namespace
 
-std::unique_ptr<Pass> mlir::relativity::createRelAddCInterfacePass() {
+std::unique_ptr<Pass> createRelAddCInterfacePass() {
   return std::make_unique<RelAddCInterfacePass>();
 }
 
-void mlir::relativity::registerRelAddCInterfacePass() {
+void registerRelAddCInterfacePass() {
   PassRegistration<RelAddCInterfacePass>();
 }
+
+} // namespace relativity
+} // namespace mlir

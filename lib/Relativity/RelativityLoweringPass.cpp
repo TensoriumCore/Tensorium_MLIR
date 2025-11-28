@@ -270,6 +270,14 @@ struct LowerRelativityPass
 };
 } // end anonymous namespace
 
-std::unique_ptr<Pass> createLowerRelativityPass() {
-  return std::make_unique<LowerRelativityPass>();
+
+namespace mlir {
+namespace relativity {
+
+std::unique_ptr<mlir::Pass> createLowerRelativityPass() {
+    return std::make_unique<LowerRelativityPass>();
 }
+
+} // namespace relativity
+} // namespace mlir
+
