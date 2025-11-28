@@ -170,44 +170,49 @@ Determinant and inverse:
 ```
 Lower the Relativity dialect:
 ```bash
-./build/bin/relativity-opt test/Relativity/test_metric_spatial.mlir  --rel-expand-metric --rel-extract-spatial --rel-linalg-lower --mlir-print-op-generic -o test/Relativity/test_expand_metric_3p1.mlir
-```
-Lower the Relativity dialect:
-```bash
-mlir-opt test/Relativity/test_expand_metric_3p1.mlir \
+./build/bin/relativity-opt test/Relativity/test_metric_spatial.mlir \
+  --rel-expand-metric \
   --convert-tensor-to-linalg \
-  --convert-linalg-to-loops \
   --one-shot-bufferize="bufferize-function-boundaries" \
+  --convert-linalg-to-loops \
+  --convert-bufferization-to-memref \
+  --expand-strided-metadata \
+  --lower-affine \
+  --convert-scf-to-cf \
+  --finalize-memref-to-llvm \
+  --llvm-request-c-wrappers \
+  --convert-func-to-llvm \
+  --convert-cf-to-llvm \
   --convert-vector-to-llvm \
   --convert-math-to-llvm \
   --convert-arith-to-llvm \
-  --convert-scf-to-cf \
-  --convert-cf-to-llvm \
-  --finalize-memref-to-llvm \
-  --convert-func-to-llvm \
   --reconcile-unrealized-casts \
-  > lowered.mlir
+  > lowered_grid.mlir
 ```
 Translate to LLVM IR and compile with a C++ tester:
 ```bash
- mlir-translate --mlir-to-llvmir lowered.mlir > lowered.ll
- clang++ -c lowered.ll -o metric_tensor.o -O3 && clang++ test/Relativity/test.cpp metric_tensor.o -o test_metric -lm -O3 -std=c++17
+mlir-translate --mlir-to-llvmir lowered_grid.mlir > lowered_grid.ll
+clang++ -c lowered_grid.ll -o metric.o -O3
+clang++ test/Relativity/test.cpp metric.o -o test_metric -lm -O3 -std=c++17
 ```
 exemple Output:
 ```bash
-Schwarzschild spatial metric at:
-X = [0.0000000000000000e+00, 1.0000000000000000e+00, 1.0000000000000000e+00]
-gamma (spatial metric) (sizes=[3,3], strides=[3,1])
-  1.3849001794597506e+00  3.8490017945975069e-01  3.8490017945975069e-01
-  3.8490017945975069e-01  1.3849001794597506e+00  3.8490017945975069e-01
-  3.8490017945975069e-01  3.8490017945975069e-01  1.3849001794597506e+00
-
-det(gamma) = 2.1547005383792515e+00
-
-gamma^{-1} (inverse) (sizes=[3,3], strides=[3,1])
-  8.2136720504591820e-01 -1.7863279495408194e-01 -1.7863279495408194e-01
- -1.7863279495408194e-01  8.2136720504591820e-01 -1.7863279495408194e-01
- -1.7863279495408194e-01 -1.7863279495408194e-01  8.2136720504591820e-01
+Schwarzschild KS 3+1 decomposition :
+coords (t, x, y, z):
+  [ 0] (0.0000000000, 1.0000000000, 1.0000000000, 1.0000000000)
+  ...
+alpha:
+  [ 0] 0.6812500386
+  ...
+beta:
+  [ 0] [0.3094010768 0.3094010768 0.3094010768]
+  ...
+gamma:
+  [ 0]
+        1.3849001795 0.3849001795 0.3849001795
+        0.3849001795 1.3849001795 0.3849001795
+        0.3849001795 0.3849001795 1.3849001795
+  ...
 ```
 
 ## Citation
