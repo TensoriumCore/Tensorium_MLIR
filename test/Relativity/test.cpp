@@ -109,7 +109,7 @@ MemRef2DF64 make_coords() {
     A.aligned[i * W + 0] = 0.0;
     A.aligned[i * W + 1] = 1.0 + 0.1 * i;
     A.aligned[i * W + 2] = 1.0;
-    A.aligned[i * W + 3] = 1.0;
+    A.aligned[i * W + 3] = 4.0;
   }
   return A;
 }
