@@ -95,13 +95,12 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
       return var;
     }
 
-    // --- DEBUT DE LA MODIFICATION ---
     std::string op;
     if (node->value == "+")
       op = "arith.addf";
     else if (node->value == "-")
       op = "arith.subf";
-    else if (node->value == "*" || node->value == "×") // Ajout de '×' au cas où
+    else if (node->value == "*" || node->value == "×") 
       op = "arith.mulf";
     else if (node->value == "/" || node->value == "÷")
       op = "arith.divf";
@@ -110,24 +109,19 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
       if (node->children.empty())
         return "%invalid";
 
-      // 1. On émet le code pour le premier enfant (l'accumulateur)
       auto lhs = emit_mlir(node->children[0], fout, indent);
 
-      // 2. On itère sur tous les enfants suivants (1, 2, 3...)
       for (size_t i = 1; i < node->children.size(); ++i) {
         auto rhs = emit_mlir(node->children[i], fout, indent);
         std::string var = Tensorium::fresh_var();
 
-        // On génère l'opération : result = op acc, current
         fout << pad << var << " = " << op << " " << lhs << ", " << rhs
              << " : f64\n";
 
-        // Le résultat devient l'opérande de gauche pour la prochaine itération
         lhs = var;
       }
       return lhs;
     }
-    // --- FIN DE LA MODIFICATION ---
 
     fout << pad << "// [TODO] unknown binary op: " << node->value << "\n";
     return "%invalid";
