@@ -23,7 +23,6 @@ std::string to_ssa_name(const std::string& symbol) {
 	return ssa;
 }
 
-
 void collect_symbols(const std::shared_ptr<tensorium::ASTNode> &node, std::set<std::string> &symbols) {
 	using namespace tensorium;
 	if (!node) return;
@@ -41,7 +40,6 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
 	if (!node)
 		return "%invalid";
 
-
 	if (node->type == ASTNodeType::Number) {
 		std::string val = node->value;
 		if (val.find('.') == std::string::npos)
@@ -50,7 +48,6 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
 		fout << pad << var << " = arith.constant " << val << " : f64\n";
 		return var;
 	}
-
 
 	if (node->type == ASTNodeType::Symbol || node->type == ASTNodeType::TensorSymbol) {
 		auto it = symbol_vars.find(node->value);
@@ -91,6 +88,7 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
 			fout << pad << var << " = math.powf " << base << ", " << exp << " : f64\n";
 			return var;
 		}
+
 		std::string op;
 		if (node->value == "+" || node->value == "-" ||
 				node->value == "*" || node->value == "/" || node->value == "÷") {
@@ -126,7 +124,6 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
 	return "%invalid";
 }
 
-
 void MLIRBackend::generate(const std::shared_ptr<tensorium::ASTNode> &root) {
     std::set<std::string> symbols;
     collect_symbols(root, symbols);
@@ -146,10 +143,8 @@ void MLIRBackend::generate(const std::shared_ptr<tensorium::ASTNode> &root) {
     fout << ") {\n";
 
     symbol_vars = symbol_argnames;   
-	Tensorium::reset_temp_counter();
-
+	   Tensorium::reset_temp_counter();
     emit_mlir(root, fout, 2);
-
     fout << "  return\n}\n\n";
     fout.close();
 }
