@@ -1,38 +1,35 @@
-add_mlir_dialect_library(MLIRRelativity
+add_mlir_dialect_library(RelativityDialect
   RelativityDialect.cpp
   RelativityOps.cpp
+  
+  Frontend/Parser.cpp
+  Utils/MetricExtract.cpp
+  Utils/MetricUtils.cpp 
+
   RelativityLoweringPass.cpp
-  RelativitySimplifyPass.cpp
   AssembleMetricTensorPass.cpp
-  Utils/FormulaParser.cpp
+  RelativitySimplifyPass.cpp
   RelExpandMetricPass.cpp
   RelExtractSpatialPass.cpp
+  
   LinearAlgebra/RelLinAlgLowering.cpp
-
-  ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/include/Relativity
+  RelAddCInterfacePass/RelAddCInterfacePass.cpp
 
   DEPENDS
   MLIRRelativityOpsIncGen
-  RelativityPythonOpsGen
+  MLIRRelativityOpsDialectIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
-  MLIRInferTypeOpInterface
-)
-
-target_sources(MLIRRelativity PRIVATE
-  ${CMAKE_SOURCE_DIR}/Tensorium_Tex/lib/Frontend/Parser.cpp
-)
-
-target_include_directories(MLIRRelativity PRIVATE
-  ${CMAKE_SOURCE_DIR}/Tensorium_Tex/lib/Frontend
+  MLIRFuncDialect
+  MLIRArithDialect
+  MLIRMathDialect
+  MLIRSCFDialect
+  MLIRVectorDialect
+  MLIRTensorDialect
+  MLIRLinalgDialect
 )
 
 set(LLVM_TARGET_DEFINITIONS ${CMAKE_SOURCE_DIR}/include/Relativity/RelativityOps.td)
-
 mlir_tablegen(RelativityOps.py.inc -gen-python-op-bindings -bind-dialect=relativity)
 add_public_tablegen_target(RelativityPythonOpsGen)
-
-add_subdirectory(LinearAlgebra)
-add_subdirectory(RelAddCInterfacePass)

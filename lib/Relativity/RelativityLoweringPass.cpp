@@ -1,5 +1,6 @@
-#include "../../Tensorium_Tex/lib/Frontend/Tensorium_AST.hpp"
-#include "../../Tensorium_Tex/lib/Frontend/Tensorium_Tex.hpp"
+#include "Relativity/Frontend/Tensorium_AST.hpp"
+#include "Relativity/Frontend/Tensorium_Tex.hpp"
+#include "Relativity/RelativityOps.h"
 #include "Relativity/RelativityOps.h"
 #include "Utils/FormulaParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"

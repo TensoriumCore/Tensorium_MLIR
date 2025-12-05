@@ -1,7 +1,6 @@
-// MetricExtract.cpp
-#include "MetricExtract.hpp"
-#include "../Frontend/Tensorium_AST.hpp"
-#include "../Frontend/Tensorium_Tensor_Index.hpp"
+#include "Relativity/Utils/MetricExtract.hpp"
+#include "Relativity/Frontend/Tensorium_AST.hpp"
+#include "Relativity/Frontend/Tensorium_Tensor_Index.hpp"
 #include <algorithm>
 #include <map>
 #include <unordered_map>

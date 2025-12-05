@@ -1,5 +1,5 @@
-#include "Tensorium_AST.hpp"
-#include "Tensorium_Tensor_Index.hpp"
+#include "Relativity/Frontend/Tensorium_AST.hpp"
+#include "Relativity/Frontend/Tensorium_Tensor_Index.hpp"
 #include <algorithm>
 #include <iostream>
 #include <optional>

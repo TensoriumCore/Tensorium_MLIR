@@ -1,6 +1,7 @@
-#include "../Frontend/Tensorium_AST.hpp"
-#include "../Frontend/Tensorium_Tensor_Index.hpp"
-#include "MetricExtract.hpp"
+#include "Relativity/Frontend/Tensorium_AST.hpp"
+#include "Relativity/Frontend/Tensorium_Tensor_Index.hpp"
+#include "Relativity/Utils/MetricExtract.hpp"
+// #include "MetricExtract.hpp"
 #include <algorithm>
 
 void pretty_print_factor(const std::shared_ptr<tensorium::ASTNode> &node,

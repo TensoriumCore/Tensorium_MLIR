@@ -43,8 +43,7 @@ target_link_directories(RelativityCompilerBindings PRIVATE ${MLIR_PYTHON_LIB_DIR
 target_link_libraries(RelativityCompilerBindings
   PRIVATE
     ${MLIR_PYTHON_LIB_DIR}/libMLIRPythonCAPI.dylib
-    MLIRRelativity
-    MLIRRelAddCInterfacePass
+    RelativityDialect
     MLIRCAPIIR
     MLIRBytecodeWriter
     MLIRBytecodeOpInterface
@@ -66,7 +65,7 @@ target_link_libraries(RelativityCompilerBindings
 
 if(APPLE)
   target_link_options(RelativityCompilerBindings PRIVATE
-    "-Wl,-force_load,$<TARGET_FILE:MLIRRelativity>"
+    "-Wl,-force_load,$<TARGET_FILE:RelativityDialect>"
     "-Wl,-rpath,${MLIR_PYTHON_LIB_DIR}"
     "-Wl,-rpath,${PROJECT_BINARY_DIR}/lib"
   )
