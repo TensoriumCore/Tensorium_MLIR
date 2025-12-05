@@ -8,7 +8,7 @@ struct MetricComponent {
   std::string variable;
   std::pair<std::string, std::string> indices;
   std::shared_ptr<ASTNode> factor;
-  bool is_metric_component = true; 
+  bool is_metric_component = true;
 };
 std::vector<MetricComponent>
 extract_metric_terms(const std::shared_ptr<ASTNode> &node,

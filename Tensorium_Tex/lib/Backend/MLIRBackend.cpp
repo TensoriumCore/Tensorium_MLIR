@@ -100,7 +100,7 @@ std::string emit_mlir(const std::shared_ptr<tensorium::ASTNode> &node,
       op = "arith.addf";
     else if (node->value == "-")
       op = "arith.subf";
-    else if (node->value == "*" || node->value == "×") 
+    else if (node->value == "*" || node->value == "×")
       op = "arith.mulf";
     else if (node->value == "/" || node->value == "÷")
       op = "arith.divf";
@@ -185,10 +185,11 @@ void MLIRBackend::generate(const std::shared_ptr<tensorium::ASTNode> &root) {
   fout << "func.func @" << funcName << "(";
   bool first = true;
   std::unordered_map<std::string, std::string> symbol_argnames;
-  
+
   for (const auto &sym : symbols) {
     std::string ssa = to_ssa_name(sym);
-    if (!first) fout << ", ";
+    if (!first)
+      fout << ", ";
     fout << "%" << ssa << ": f64";
     symbol_argnames[sym] = "%" + ssa;
     first = false;
@@ -201,10 +202,10 @@ void MLIRBackend::generate(const std::shared_ptr<tensorium::ASTNode> &root) {
   std::string result_var = emit_mlir(root, fout, 2);
 
   if (result_var == "%invalid" || result_var.empty()) {
-      fout << "  %ret_zero = arith.constant 0.0 : f64\n";
-      fout << "  return %ret_zero : f64\n";
+    fout << "  %ret_zero = arith.constant 0.0 : f64\n";
+    fout << "  return %ret_zero : f64\n";
   } else {
-      fout << "  return " << result_var << " : f64\n";
+    fout << "  return " << result_var << " : f64\n";
   }
 
   fout << "}\n\n";

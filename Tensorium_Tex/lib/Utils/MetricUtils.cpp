@@ -83,8 +83,7 @@ void flatten_sum(const std::shared_ptr<tensorium::ASTNode> &node,
       (node->value == "+" || node->value == "-")) {
     flatten_sum(node->children[0], out, sign);
     flatten_sum(node->children[1], out, (node->value == "+") ? sign : -sign);
-  } 
-  else {
+  } else {
     if (sign == 1) {
       out.push_back(node);
     } else {

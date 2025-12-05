@@ -87,6 +87,6 @@ int main(int argc, char *argv[]) {
   else {
     std::cerr << "Unknown mode: " << mode << "\n";
     return 2;
-  } 
+  }
   return 0;
 }
