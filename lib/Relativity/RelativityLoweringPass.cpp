@@ -1,8 +1,7 @@
 #include "Relativity/Frontend/Tensorium_AST.hpp"
 #include "Relativity/Frontend/Tensorium_Tex.hpp"
 #include "Relativity/RelativityOps.h"
-#include "Relativity/RelativityOps.h"
-#include "Utils/FormulaParser.h"
+#include "Relativity/Utils/FormulaParser.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Math/IR/Math.h"
@@ -162,6 +161,8 @@ mlir::Value emitFormula(tensorium::ASTNode *node,
       return rewriter.create<math::CosOp>(loc, a);
     if (node->value == "tan" || node->value == "\\tan")
       return rewriter.create<math::TanOp>(loc, a);
+    if (node->value == "sqrt" || node->value == "\\sqrt")
+      return rewriter.create<math::SqrtOp>(loc, a);
     llvm::report_fatal_error("Unsupported function");
   }
 
@@ -271,14 +272,12 @@ struct LowerRelativityPass
 };
 } // end anonymous namespace
 
-
 namespace mlir {
 namespace relativity {
 
 std::unique_ptr<mlir::Pass> createLowerRelativityPass() {
-    return std::make_unique<LowerRelativityPass>();
+  return std::make_unique<LowerRelativityPass>();
 }
 
 } // namespace relativity
 } // namespace mlir
-

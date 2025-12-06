@@ -15,28 +15,25 @@ class Compiler:
     def _optimize(self, module: Module):
         """Applique ton pipeline de passes MLIR."""
         pipeline = """
-    builtin.module(
-        rel-expand-metric,
-        convert-tensor-to-linalg,
-        one-shot-bufferize{bufferize-function-boundaries},
-        -convert-linalg-to-openmp, 
-        -convert-linalg-to-vector,
-        -vector-transfer-op-optimization,
-        -vector-unroll-vector-transfers,
-        -convert-linalg-to-loops,
-        -convert-openmp-to-llvm,
-        -convert-vector-to-llvm,
-        -lower-affine,
-        -convert-scf-to-cf,
-        -finalize-memref-to-llvm,
-        -func.func(llvm-request-c-wrappers),
-        -convert-func-to-llvm,
-        -convert-cf-to-llvm,
-        -convert-math-to-llvm,
-        -convert-arith-to-llvm,
-        -reconcile-unrealized-casts
-    )
-    """
+        builtin.module(
+          rel-expand-metric,
+          convert-tensor-to-linalg,
+          one-shot-bufferize{bufferize-function-boundaries},
+          convert-linalg-to-loops,
+          convert-bufferization-to-memref,
+          expand-strided-metadata,
+          lower-affine,
+          convert-scf-to-cf,
+          finalize-memref-to-llvm,
+          func.func(llvm-request-c-wrappers),
+          convert-func-to-llvm,
+          convert-cf-to-llvm,
+          convert-vector-to-llvm,
+          convert-math-to-llvm,
+          convert-arith-to-llvm,
+          reconcile-unrealized-casts
+        )
+        """
         pm = PassManager.parse(pipeline)
         pm.run(module.operation)
         return module
