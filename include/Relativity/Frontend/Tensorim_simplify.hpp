@@ -16,20 +16,16 @@ inline std::string ast_to_simple_string(const std::shared_ptr<ASTNode> &n) {
   case ASTNodeType::Number:
     return n->value;
 
-  // FUSION DE SYMBOL ET TENSORSYMBOL POUR L'INJECTION
   case ASTNodeType::Symbol:
   case ASTNodeType::TensorSymbol: {
     std::string val = n->value;
-    // Enlever le backslash si présent (ex: "\rho" -> "rho")
     if (!val.empty() && val[0] == '\\')
       val.erase(0, 1);
 
     if (val == "rho") {
-      std::cout << "developping rho" << std::endl;
       return "sqrt(r^2 + (a^2 * cos(theta)^2))";
     }
     if (val == "Delta") {
-      // Delta = r^2 - 2Mr + a^2
       return "(r^2 - (2 * M * r) + a^2)";
     }
     if (val == "Sigma") {
@@ -43,30 +39,37 @@ inline std::string ast_to_simple_string(const std::shared_ptr<ASTNode> &n) {
 
   case ASTNodeType::BinaryOp: {
     auto op = n->value;
-    if (op == "/")
-      return "(" + ast_to_simple_string(n->children[0]) + ")/(" +
-             ast_to_simple_string(n->children[1]) + ")";
-    if (op == "^")
-      return ast_to_simple_string(n->children[0]) + "^" +
-             ast_to_simple_string(n->children[1]);
 
-    if (op == "*" || op == "+" || op == "-") {
-      std::ostringstream oss;
-      oss << "(";
-      for (size_t i = 0; i < n->children.size(); ++i) {
-        if (i != 0)
-          oss << " " << op << " ";
-        oss << ast_to_simple_string(n->children[i]);
-      }
-      oss << ")";
-      return oss.str();
+    if (op == "/") {
+      return "(" + ast_to_simple_string(n->children[0]) + ") / (" +
+             ast_to_simple_string(n->children[1]) + ")";
     }
+
+    if (op == "^") {
+      return "pow(" + ast_to_simple_string(n->children[0]) + ", " +
+             ast_to_simple_string(n->children[1]) + ")";
+    }
+
+    if (op == "*") {
+      return "(" + ast_to_simple_string(n->children[0]) + " * " +
+             ast_to_simple_string(n->children[1]) + ")";
+    }
+
+    if (op == "+") {
+      return "(" + ast_to_simple_string(n->children[0]) + " + " +
+             ast_to_simple_string(n->children[1]) + ")";
+    }
+
+    if (op == "-") {
+      return "(" + ast_to_simple_string(n->children[0]) + " - " +
+             ast_to_simple_string(n->children[1]) + ")";
+    }
+
     return "(" + ast_to_simple_string(n->children[0]) + " " + op + " " +
            ast_to_simple_string(n->children[1]) + ")";
   }
   case ASTNodeType::FunctionCall: {
     std::ostringstream oss;
-    // Nettoyage du nom de la fonction (ex: \sin -> sin)
     std::string fname = n->value;
     if (!fname.empty() && fname[0] == '\\')
       fname.erase(0, 1);
@@ -102,6 +105,7 @@ inline std::string ast_to_simple_string(const std::shared_ptr<ASTNode> &n) {
     return "?";
   }
 }
+
 inline void associate_trig_functions(std::shared_ptr<ASTNode> &n) {
   if (!n)
     return;

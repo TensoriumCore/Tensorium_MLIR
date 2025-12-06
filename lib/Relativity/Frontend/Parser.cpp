@@ -219,54 +219,44 @@ std::shared_ptr<ASTNode> Parser::parse_primary_with_power() {
 }
 
 std::shared_ptr<ASTNode>
-Parser::parse_binary_rhs(int prec, std::shared_ptr<ASTNode> lhs) {
-  while (!eof()) {
+Parser::parse_binary_rhs(int exprPrec, std::shared_ptr<ASTNode> lhs) {
+  while (true) {
     TokenType t = peek().type;
     int tokPrec = get_precedence(t);
-    bool implicit = false;
 
+    bool implicitMult = false;
     if (tokPrec < 0 && is_primary_start(t)) {
       tokPrec = 20;
-      implicit = true;
+      implicitMult = true;
     }
 
-    if (tokPrec < prec)
+    if (tokPrec < exprPrec)
       return lhs;
 
-    std::shared_ptr<ASTNode> rhs;
-
-    if (implicit) {
-      auto prim = parse_primary_with_power();
-      if (!eof() && peek().type == TokenType::POW_OP)
-        rhs = parse_binary_rhs(30, prim);
-      else
-        rhs = prim;
-    } else {
+    std::string opValue = "*";
+    if (!implicitMult) {
       Token opTok = get();
-      rhs = parse_primary_with_power();
-      if (!rhs)
-        return nullptr;
-
-      if (opTok.type == TokenType::POW_OP &&
-          get_precedence(peek().type) >= tokPrec) {
-        rhs = parse_binary_rhs(tokPrec, rhs);
-        if (!rhs)
-          return nullptr;
-      }
-
-      auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, opTok.value);
-      bin->children = {lhs, rhs};
-      lhs = bin;
-      continue;
+      opValue = opTok.value;
     }
 
-    auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, "*");
+    auto rhs = parse_primary_with_power(); 
+    if (!rhs)
+      return nullptr;
+
+    int nextPrec = get_precedence(peek().type);
+    if (nextPrec < 0 && is_primary_start(peek().type))
+      nextPrec = 20;
+    if (tokPrec < nextPrec) {
+      rhs = parse_binary_rhs(tokPrec + 1, rhs);
+      if (!rhs)
+        return nullptr;
+    }
+
+    auto bin = std::make_shared<ASTNode>(ASTNodeType::BinaryOp, opValue);
     bin->children = {lhs, rhs};
     lhs = bin;
   }
-  return lhs;
 }
-
 void append_split_indices(std::vector<Index> &list, const std::string &raw,
                           IndexVariance var) {
   if (raw.size() > 1 && raw.rfind('\\', 0) != 0) {

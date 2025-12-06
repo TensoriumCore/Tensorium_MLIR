@@ -159,14 +159,21 @@ int main(int argc, char **argv) {
         "indices", builder.getStrArrayAttr({indices.first, indices.second}));
     componentOp->setAttr("formula", builder.getStringAttr(formula));
 
-    auto idxI = builder.create<arith::ConstantOp>(
-        builder.getUnknownLoc(), builder.getIndexAttr(mapIndex(indices.first)));
-    auto idxJ = builder.create<arith::ConstantOp>(
-        builder.getUnknownLoc(),
-        builder.getIndexAttr(mapIndex(indices.second)));
+    int i = mapIndex(indices.first);
+    int j = mapIndex(indices.second);
+
+    auto idxI = builder.create<arith::ConstantOp>(builder.getUnknownLoc(),
+                                                  builder.getIndexAttr(i));
+    auto idxJ = builder.create<arith::ConstantOp>(builder.getUnknownLoc(),
+                                                  builder.getIndexAttr(j));
 
     builder.create<memref::StoreOp>(builder.getUnknownLoc(), componentOp,
                                     outBuf, ValueRange{idxI, idxJ});
+
+    if (i != j) {
+      builder.create<memref::StoreOp>(builder.getUnknownLoc(), componentOp,
+                                      outBuf, ValueRange{idxJ, idxI});
+    }
   }
 
   builder.create<func::ReturnOp>(builder.getUnknownLoc());

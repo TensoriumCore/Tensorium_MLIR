@@ -130,7 +130,16 @@ std::vector<MetricComponent> extract_metric_terms(const Node &n, Node factor) {
       std::string i1 = diff_indices[0], i2 = diff_indices[1];
       if (i1 > i2)
         std::swap(i1, i2);
-      out.push_back({"g", {i1, i2}, coeff ? coeff : factor, true});
+
+      Node finalFactor = coeff ? coeff : factor;
+
+      if (i1 != i2) {
+        auto half = std::make_shared<ASTNode>(ASTNodeType::Number, "0.5");
+        finalFactor = std::make_shared<ASTNode>(
+            ASTNodeType::BinaryOp, "*", std::vector<Node>{half, finalFactor});
+      }
+
+      out.push_back({"g", {i1, i2}, finalFactor, true});
     } else if (diff_indices.size() > 2) {
       std::sort(diff_indices.begin(), diff_indices.end());
       for (size_t i = 0; i < diff_indices.size(); ++i) {

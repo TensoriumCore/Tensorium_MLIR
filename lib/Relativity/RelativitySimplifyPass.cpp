@@ -25,16 +25,25 @@ struct RelativitySimplifyPass
       if (auto metric = dyn_cast<relativity::MetricComponentOp>(op)) {
         if (auto attr = metric->getAttrOfType<StringAttr>("formula")) {
           std::string f = attr.getValue().str();
+
           f = std::regex_replace(f, fracRe, "($1)/($2)");
           f = std::regex_replace(f, fracSimpleRe, "($1)/($2)");
           f = std::regex_replace(f, expRe, "^$1");
+
+          static const std::regex powRe(
+              R"(pow\s*\(\s*([^,\)]+)\s*,\s*([^\)]+)\s*\))");
+          f = std::regex_replace(f, powRe, "$1^$2");
+
+          static const std::regex funcPowRe(
+              R"((sin|cos|tan|exp|log)\(([^)]+)\)\s*\^\s*([0-9]+))");
+          f = std::regex_replace(f, funcPowRe, "pow($1($2),$3)");
           f.erase(std::remove(f.begin(), f.end(), '{'), f.end());
           f.erase(std::remove(f.begin(), f.end(), '}'), f.end());
 
           if (f != attr.getValue().str()) {
             op->setAttr("formula", StringAttr::get(op->getContext(), f));
-            llvm::errs() << "[RelativitySimplifyPass] Simplified formula to: "
-                         << f << "\n";
+            llvm::errs() << "[RelativitySimplifyPass] Simplified: " << f
+                         << "\n";
           }
         }
       }

@@ -15,12 +15,22 @@
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "llvm/Support/Casting.h"
 #include <memory>
+#include <regex>
 
 using namespace mlir;
 using namespace tensorium;
 
 namespace tensorium {
 using FPNode = FormulaParser::ASTNode;
+std::string normalizeFormula(std::string s) {
+  static std::regex powRe(R"(pow\(([^,]+),([^)]+)\))");
+  while (std::regex_search(s, powRe))
+    s = std::regex_replace(s, powRe, "($1^$2)");
+
+  static std::regex spaceRe(R"(\s+)");
+  s = std::regex_replace(s, spaceRe, "");
+  return s;
+}
 std::vector<Token> tokenize(const std::string &input) {
   Lexer lexer(input);
   return lexer.tokenize();
@@ -40,32 +50,33 @@ Value resolveSymbol(const std::string &name, mlir::PatternRewriter &rewriter,
   if (name == "r")
     return inputs[4];
 
-  if (name == "rho") {
-    Value r = inputs[4];
-    Value a = inputs[1];
-    Value theta = inputs[2];
-    Value r2 = rewriter.create<arith::MulFOp>(loc, r, r);
-    Value a2 = rewriter.create<arith::MulFOp>(loc, a, a);
-    Value cos_theta = rewriter.create<math::CosOp>(loc, theta);
-    Value cos2 = rewriter.create<arith::MulFOp>(loc, cos_theta, cos_theta);
-    Value a2_cos2 = rewriter.create<arith::MulFOp>(loc, a2, cos2);
-    Value sum = rewriter.create<arith::AddFOp>(loc, r2, a2_cos2);
-    return rewriter.create<math::SqrtOp>(loc, sum);
-  }
-
-  if (name == "Delta") {
-    Value r = inputs[4];
-    Value M = inputs[0];
-    Value a = inputs[1];
-    Value r2 = rewriter.create<arith::MulFOp>(loc, r, r);
-    Value a2 = rewriter.create<arith::MulFOp>(loc, a, a);
-    Value two =
-        rewriter.create<arith::ConstantOp>(loc, rewriter.getF64FloatAttr(2.0));
-    Value two_M_r = rewriter.create<arith::MulFOp>(
-        loc, two, rewriter.create<arith::MulFOp>(loc, M, r));
-    Value diff = rewriter.create<arith::SubFOp>(loc, r2, two_M_r);
-    return rewriter.create<arith::AddFOp>(loc, diff, a2);
-  }
+  // if (name == "rho") {
+  //   Value r = inputs[4];
+  //   Value a = inputs[1];
+  //   Value theta = inputs[2];
+  //   Value r2 = rewriter.create<arith::MulFOp>(loc, r, r);
+  //   Value a2 = rewriter.create<arith::MulFOp>(loc, a, a);
+  //   Value cos_theta = rewriter.create<math::CosOp>(loc, theta);
+  //   Value cos2 = rewriter.create<arith::MulFOp>(loc, cos_theta, cos_theta);
+  //   Value a2_cos2 = rewriter.create<arith::MulFOp>(loc, a2, cos2);
+  //   Value sum = rewriter.create<arith::AddFOp>(loc, r2, a2_cos2);
+  //   return rewriter.create<math::SqrtOp>(loc, sum);
+  // }
+  //
+  // if (name == "Delta") {
+  //   Value r = inputs[4];
+  //   Value M = inputs[0];
+  //   Value a = inputs[1];
+  //   Value r2 = rewriter.create<arith::MulFOp>(loc, r, r);
+  //   Value a2 = rewriter.create<arith::MulFOp>(loc, a, a);
+  //   Value two =
+  //       rewriter.create<arith::ConstantOp>(loc,
+  //       rewriter.getF64FloatAttr(2.0));
+  //   Value two_M_r = rewriter.create<arith::MulFOp>(
+  //       loc, two, rewriter.create<arith::MulFOp>(loc, M, r));
+  //   Value diff = rewriter.create<arith::SubFOp>(loc, r2, two_M_r);
+  //   return rewriter.create<arith::AddFOp>(loc, diff, a2);
+  // }
 
   if (name == "sin" || name == "cos" || name == "tan") {
     llvm::errs() << "[WARNING] Function " << name
@@ -186,8 +197,9 @@ struct MetricComponentLowering
                                 PatternRewriter &rewriter) const override {
     Location loc = op.getLoc();
     ValueRange inputs = op.getOperands();
+
     auto attr = op->getAttrOfType<StringAttr>("formula");
-    std::string str = attr.getValue().str();
+    std::string str = normalizeFormula(attr.getValue().str());
     auto tokens = tensorium::tokenize(str);
     tensorium::Parser parser(tokens);
     auto stmts = parser.parse_statements();
